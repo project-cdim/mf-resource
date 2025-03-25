@@ -1,0 +1,153 @@
+/*
+ * Copyright 2025 NEC Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+import { APPResource } from '@/types';
+
+/** dummy data */
+export const dummyAPPResource: APPResource[] = [
+  {
+    id: 'res001',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res002',
+    type: 'memory',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Unavailable',
+    nodeIDs: [],
+    cxlSwitchId: '',
+  },
+  {
+    id: 'res003',
+    type: 'networkInterface',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res004',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res005',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res006',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'Warning',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res007',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'Warning',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res008',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res009',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res010',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res011',
+    type: 'CPU',
+    state: 'Enabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+  {
+    id: 'res012',
+    type: 'CPU',
+    state: 'Disabled',
+    health: 'OK',
+    // powerConsumption: 0,
+    // useRate: 0,
+    resourceAvailable: 'Available',
+    nodeIDs: ['node001', 'node002'],
+    cxlSwitchId: 'cxl001',
+  },
+];
