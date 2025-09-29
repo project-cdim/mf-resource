@@ -54,6 +54,7 @@ const chassis: APIChassis = {
       annotation: {
         available: true,
       },
+      detected: true,
       nodeIDs: [],
     },
   ],

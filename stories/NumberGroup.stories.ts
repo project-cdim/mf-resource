@@ -37,6 +37,7 @@ const NumberViewDummy: NumberViewProps = {
   number: 10,
   link: './resource-list',
   query: { health: ['Warning'], type: ['Accelerator'] },
+  loading: false,
 };
 
 export const Standard: Story = {

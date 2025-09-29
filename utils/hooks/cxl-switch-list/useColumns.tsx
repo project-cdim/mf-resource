@@ -120,17 +120,17 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.disabled'),
       render: ({ id, device }) => {
         return device.disabled ? (
-          <PageLink
-            title={t('Resources.list')}
-            path={'/cdim/res-resource-list'}
-            query={{ cxlSwitchId: id, state: 'Disabled' }}
-            key={id}
-          >
-            <Group>
-              {StateToIconForNode(device.disabled)}
+          <Group>
+            {StateToIconForNode(device.disabled)}
+            <PageLink
+              title={t('Resources.list')}
+              path={'/cdim/res-resource-list'}
+              query={{ cxlSwitchId: id, state: 'Disabled' }}
+              key={id}
+            >
               {device.disabled.toString()}
-            </Group>
-          </PageLink>
+            </PageLink>
+          </Group>
         ) : (
           <Group>
             {StateToIconForNode(device.disabled)}
@@ -155,17 +155,17 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.warning'),
       render: ({ id, device }) => {
         return device.warning ? (
-          <PageLink
-            title={t('Resources.list')}
-            path={'/cdim/res-resource-list'}
-            query={{ cxlSwitchId: id, health: 'Warning' }}
-            key={id}
-          >
-            <Group>
-              {HealthToIconForNodeWarning(device.warning)}
+          <Group>
+            {HealthToIconForNodeWarning(device.warning)}
+            <PageLink
+              title={t('Resources.list')}
+              path={'/cdim/res-resource-list'}
+              query={{ cxlSwitchId: id, health: 'Warning' }}
+              key={id}
+            >
               {device.warning.toString()}
-            </Group>
-          </PageLink>
+            </PageLink>
+          </Group>
         ) : (
           <Group>
             {HealthToIconForNodeWarning(device.warning)}
@@ -190,17 +190,17 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.critical'),
       render: ({ id, device }) => {
         return device.critical ? (
-          <PageLink
-            title={t('Resources.list')}
-            path={'/cdim/res-resource-list'}
-            query={{ cxlSwitchId: id, health: 'Critical' }}
-            key={id}
-          >
-            <Group>
-              {HealthToIconForNodeCritical(device.critical)}
+          <Group>
+            {HealthToIconForNodeCritical(device.critical)}
+            <PageLink
+              title={t('Resources.list')}
+              path={'/cdim/res-resource-list'}
+              query={{ cxlSwitchId: id, health: 'Critical' }}
+              key={id}
+            >
               {device.critical.toString()}
-            </Group>
-          </PageLink>
+            </PageLink>
+          </Group>
         ) : (
           <Group>
             {HealthToIconForNodeCritical(device.critical)}
@@ -225,17 +225,17 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.resourceUnavailable'),
       render: ({ id, device }) => {
         return device.resourceUnavailable ? (
-          <PageLink
-            title={t('Resources.list')}
-            path={'/cdim/res-resource-list'}
-            query={{ cxlSwitchId: id, resourceAvailable: 'Unavailable' }}
-            key={id}
-          >
-            <Group>
-              {AvailableToIconForNode(device.resourceUnavailable)}
+          <Group>
+            {AvailableToIconForNode(device.resourceUnavailable)}
+            <PageLink
+              title={t('Resources.list')}
+              path={'/cdim/res-resource-list'}
+              query={{ cxlSwitchId: id, resourceAvailable: 'Unavailable' }}
+              key={id}
+            >
               {device.resourceUnavailable.toString()}
-            </Group>
-          </PageLink>
+            </PageLink>
+          </Group>
         ) : (
           <Group>
             {AvailableToIconForNode(device.resourceUnavailable)}

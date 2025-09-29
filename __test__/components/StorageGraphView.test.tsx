@@ -42,6 +42,7 @@ describe('StorageGraphView', () => {
     const props: StorageGraphViewProps = {
       title: 'Storage Usage Rate',
       data: { used: 0, allocated: 0, overall: 0 },
+      loading: false,
     };
     render(<StorageGraphView {...props} />);
     const title = screen.getByRole('heading', { level: 3 });
@@ -56,6 +57,7 @@ describe('StorageGraphView', () => {
         allocated: 2 * 1024 ** 3, // 50%, 2.00GiB
         overall: 4 * 1024 ** 3, // 4.00GiB
       },
+      loading: false,
     };
     render(<StorageGraphView {...props} />);
     /** Used value (graph length, percentage value) */
@@ -82,6 +84,7 @@ describe('StorageGraphView', () => {
         allocated: 2 * 1024 ** 3, // 50%, 2.00GiB
         overall: 4 * 1024 ** 3, // 4.00GiB
       },
+      loading: false,
     };
     render(<StorageGraphView {...props} />);
     const usedLegend = screen.getByText(/^Used/);
@@ -102,6 +105,7 @@ describe('StorageGraphView', () => {
         allocated: 2 * 1024 ** 3, // 50%, 2.00GiB
         overall: undefined,
       },
+      loading: false,
     };
     render(<StorageGraphView {...props} />);
     const usedLegend = screen.getByText(/^Used/);
@@ -120,6 +124,7 @@ describe('StorageGraphView', () => {
         allocated: 2 * 1024 ** 3, // 50%, 2.00GiB
         overall: 4 * 1024 ** 3, // 4.00GiB
       },
+      loading: false,
     };
     render(<StorageGraphView {...props} />);
     const usedLegend = screen.getByText(/^Used/);

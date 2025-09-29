@@ -26,7 +26,7 @@ import { render } from '@/shared-modules/__test__/test-utils';
 import { MessageBox, PageHeader } from '@/shared-modules/components';
 import { useLoading, useMSW } from '@/shared-modules/utils/hooks';
 
-import { ResourceListTable } from '@/components';
+import { ResourceListTable, useFormatResourceListTableData } from '@/components';
 
 import Rack from '@/app/[lng]/rack/page';
 import { dummyRack } from '@/utils/dummy-data/chassisList/chassisList';
@@ -50,7 +50,15 @@ jest.mock('@/shared-modules/components', () => ({
   PageHeader: jest.fn(),
   MessageBox: jest.fn(),
 }));
-jest.mock('@/components/ResourceListTable');
+jest.mock('@/components/ResourceListTable', () => ({
+  ResourceListTable: jest.fn(() => <div>Resource List Table</div>),
+  useFormatResourceListTableData: jest.fn(() => ({
+    data: [],
+    rgError: undefined,
+    rgIsValidating: false,
+    rgMutate: jest.fn(),
+  })),
+}));
 
 describe('Rack Elevations', () => {
   beforeEach(() => {
@@ -72,6 +80,9 @@ describe('Rack Elevations', () => {
     render(<Rack />);
     // @ts-ignore
     const givenProps = PageHeader.mock.lastCall[0]; // The first argument of the last call
+    const mutate = givenProps.mutate;
+    mutate();
+    expect(mutate).toBeDefined();
     expect(givenProps.pageTitle).toBe('Rack Elevations');
     expect(givenProps.items).toEqual([{ title: 'Resource Management' }, { title: 'Rack Elevations' }]);
   });
@@ -179,38 +190,70 @@ describe('Rack Elevations: When an Error Occurs', () => {
     // @ts-ignore
     useSWRImmutable.mockImplementation(() => ({
       error: {
-        message: 'Error occurred',
+        message: 'Error occurred first',
         response: {
           data: {
-            message: 'Error Message',
+            message: 'Error Message first',
           },
         },
       },
       mutate: jest.fn(),
     }));
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: {
+        message: 'Error occurred second',
+        response: {
+          data: {
+            message: 'Error Message second',
+          },
+        },
+      },
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
     render(<Rack />);
     // @ts-ignore
-    const givenProps = MessageBox.mock.lastCall[0]; // the first argument of the last call
+    const givenProps = MessageBox.mock.calls[0][0]; // the first argument of the last call
     expect(givenProps.type).toBe('error');
-    expect(givenProps.title).toBe('Error occurred');
-    expect(givenProps.message).toBe('Error Message');
+    expect(givenProps.title).toBe('Error occurred first');
+    expect(givenProps.message).toBe('Error Message first');
+    // @ts-ignore
+    const secondProps = MessageBox.mock.calls[1][0]; // the first argument of the last call
+    expect(secondProps.type).toBe('error');
+    expect(secondProps.title).toBe('Error occurred second');
+    expect(secondProps.message).toBe('Error Message second');
   });
 
-  test('When unable to connect to the server, a message is displayed', async () => {
+  test('When unable to connect to the server, message are displayed', async () => {
     // @ts-ignore
     useSWRImmutable.mockImplementation(() => ({
       error: {
-        message: 'Error occurred',
+        message: 'Error occurred 1',
         response: null,
       },
       mutate: jest.fn(),
     }));
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: {
+        message: 'Error occurred 2',
+        response: null,
+      },
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
     render(<Rack />);
     // @ts-ignore
-    const givenProps = MessageBox.mock.lastCall[0]; // the first argument of the last call
+    const givenProps = MessageBox.mock.calls[0][0]; // the first argument of the last call
     expect(givenProps.type).toBe('error');
-    expect(givenProps.title).toBe('Error occurred');
+    expect(givenProps.title).toBe('Error occurred 1');
     expect(givenProps.message).toBe('');
+    // @ts-ignore
+    const secondProps = MessageBox.mock.calls[1][0]; // the first argument of the last call
+    expect(secondProps.type).toBe('error');
+    expect(secondProps.title).toBe('Error occurred 2');
+    expect(secondProps.message).toBe('');
   });
 });
 

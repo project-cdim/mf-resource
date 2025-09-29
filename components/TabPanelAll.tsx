@@ -18,8 +18,10 @@ import { Group, Stack, Tabs } from '@mantine/core';
 import _ from 'lodash';
 import { useLocale, useTranslations } from 'next-intl';
 
-import { DatePicker } from '@/shared-modules/components';
-import { APIDeviceType, APIPromQL, APIPromQLSingle, APIresources, isAPIDeviceType } from '@/shared-modules/types';
+import { useResourceSummary } from '@/utils/hooks/useResourceSummary';
+import { useSummaryRangeGraph } from '@/utils/hooks/useSummaryRangeGraph';
+import { useSummarySingleGraph } from '@/utils/hooks/useSummarySingleGraph';
+import { APIDeviceType, isAPIDeviceType } from '@/shared-modules/types';
 import {
   formatEnergyValue,
   formatNetworkTransferValue,
@@ -38,10 +40,12 @@ import {
   GraphGroupItem,
   NumberGroup,
   NumberViewProps,
+  DisplayPeriodPicker,
 } from '@/components';
 
 import { parseHistogramData } from '@/utils/parse/parseHistogramData';
 import { parseStorageGraphData } from '@/utils/parse/parseStorageGraphData';
+import { useLoading, useMetricDateRange } from '@/shared-modules/utils/hooks';
 
 /**
  * Represents a tab in the TabPanelAll component.
@@ -54,35 +58,62 @@ export type TabPanelAllTab = APIDeviceType | 'all';
 export type TabPanelAllProps = {
   /** List of device types {@link APIDeviceType}[] */
   tabs: TabPanelAllTab[];
-  /** All resource information {@link APIresources} */
-  data: APIresources | undefined;
-  /** Graph data (time range) */
-  rangeGraphData: APIPromQL | undefined;
-  /** Graph data (single point in time) */
-  singleGraphData: APIPromQLSingle | undefined;
-  /** Start date for the graph data */
-  startDate: string | undefined;
-  /** End date for the graph data */
-  endDate: string | undefined;
+  /** Date range for the graph data */
+  dateRange: [Date, Date];
+  /** Setter for the date range */
+  setDateRange: (range: [Date, Date]) => void;
 };
 
 /**
- * Component to display the content of the All tab
- * @param props {@link TabPanelAllProps}
- * @returns JSX.Element displaying the content of the All tab
+ * TabPanelAll component displays a comprehensive dashboard for all resource types,
+ * including performance graphs, resource counts, and allocation summaries.
+ *
+ * This component aggregates and visualizes resource data based on the selected date range
+ * and the provided tabs, supporting multiple resource types and summary views.
+ * It uses various custom hooks to fetch and process data for graphs and number displays.
+ *
+ * @param props - The properties for TabPanelAll.
+ * @param props.tabs - An array of resource type tabs to display (including 'all' and specific device types).
+ * @param props.dateRange - The currently selected date range for metrics and graphs.
+ * @param props.setDateRange - Callback to update the selected date range.
+ *
+ * @returns A React element rendering the "All" tab panel with performance graphs, resource numbers,
+ *          allocation summaries, and additional resource status groups.
+ *
+ * @remarks
+ * - Uses custom hooks for data fetching: useResourceSummary, useSummaryRangeGraph, useSummarySingleGraph.
+ * - Dynamically generates graph and number groups based on the provided tabs and translations.
+ * - Handles loading states and localization.
  */
 export const TabPanelAll = (props: TabPanelAllProps) => {
+  const [metricStartDate, metricEndDate] = useMetricDateRange(props.dateRange);
+  // --- custom hooks ---
+  const { data, isValidating } = useResourceSummary();
+  const { data: rangeGraphData, isValidating: rangeGraphValidating } = useSummaryRangeGraph(
+    props.tabs.filter((t): t is APIDeviceType => t !== 'all'),
+    metricStartDate,
+    metricEndDate
+  );
+  const { data: singleGraphData, isValidating: singleGraphValidating } = useSummarySingleGraph(
+    props.tabs.filter((t): t is APIDeviceType => t !== 'all'),
+    metricEndDate
+  );
+
+  const resourceLoading = useLoading(isValidating);
+  const rangeGraphLoading = useLoading(rangeGraphValidating);
+  const singleGraphLoading = useLoading(singleGraphValidating);
+
   /** Get the current language setting */
   const currentLanguage = useLocale();
   const t = useTranslations();
 
   const energyAllGraphData =
-    props.rangeGraphData &&
+    rangeGraphData &&
     mergeMultiGraphData(
       props.tabs
         .filter((tab) => tab !== 'all')
         .map((type) =>
-          parseGraphData(props.rangeGraphData, `${type}_energy`, currentLanguage, props.startDate, props.endDate)
+          parseGraphData(rangeGraphData, `${type}_energy`, currentLanguage, metricStartDate, metricEndDate)
         )
     );
 
@@ -102,18 +133,14 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
                 data:
                   tab === 'all'
                     ? energyAllGraphData
-                    : parseGraphData(
-                        props.rangeGraphData,
-                        `${tab}_energy`,
-                        currentLanguage,
-                        props.startDate,
-                        props.endDate
-                      ),
+                    : parseGraphData(rangeGraphData, `${tab}_energy`, currentLanguage, metricStartDate, metricEndDate),
                 stack: tab === 'all' ? true : false,
                 valueFormatter: formatEnergyValue,
                 link: '/cdim/res-resource-list',
                 linkTitle: t('Resources.list'),
                 query: tab === 'all' ? undefined : { type: [tab] },
+                loading: rangeGraphLoading,
+                dateRange: props.dateRange,
               },
             };
           }
@@ -131,16 +158,18 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
               props: {
                 title: t('Network Transfer Speed'),
                 data: parseGraphData(
-                  props.rangeGraphData,
+                  rangeGraphData,
                   'networkInterface_usage',
                   currentLanguage,
-                  props.startDate,
-                  props.endDate
+                  metricStartDate,
+                  metricEndDate
                 ),
                 valueFormatter: formatNetworkTransferValue,
                 link: '/cdim/res-resource-list',
                 linkTitle: t('Resources.list'),
                 query: { type: [tab] },
+                loading: rangeGraphLoading,
+                dateRange: props.dateRange,
               },
             };
           } else if (tab === 'storage') {
@@ -148,10 +177,12 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
               type: 'storage',
               props: {
                 title: t('Storage Usage'),
-                data: parseStorageGraphData(props.data, props.singleGraphData),
+                data: parseStorageGraphData(data, singleGraphData),
                 link: '/cdim/res-resource-list',
                 linkTitle: t('Resources.list'),
                 query: { type: [tab] },
+                loading: singleGraphLoading,
+                date: metricEndDate,
               },
             };
           } else if (tab === 'all' || tab === 'graphicController' || tab === 'virtualMedia') {
@@ -162,11 +193,13 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
               type: 'histogram',
               props: {
                 title: _.upperFirst(tab),
-                data: parseHistogramData(props.singleGraphData, [tab], props.data),
+                data: parseHistogramData(singleGraphData, [tab], data),
                 valueFormatter: formatNumberOfResources,
                 link: '/cdim/res-resource-list',
                 linkTitle: t('Resources.list'),
                 query: { type: [tab] },
+                loading: singleGraphLoading,
+                date: metricEndDate,
               },
             };
           }
@@ -181,8 +214,8 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
     props.tabs.map((tab) => ({
       title: _.upperFirst(tab),
       number:
-        props.data?.resources.filter(
-          (resource) =>
+        data?.resources.filter(
+          (resource: any) =>
             (tab === 'all' || resource.device.type === tab) &&
             (title === t('Total')
               ? true
@@ -209,37 +242,41 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
           resourceAvailable: ['Unavailable'],
         }),
       },
+      loading: resourceLoading,
     }));
   /** Data on the number of resources in the node layout: Generate props for displaying the number of resources in the node layout */
   const getAllocated = (): AllocatedViewAllProps[] =>
     props.tabs.map((tab) => {
-      if (props.data === undefined) {
+      if (data === undefined) {
         return {
           title: _.upperFirst(tab),
           device: undefined,
           volume: undefined,
+          loading: resourceLoading,
         };
       }
       const AllocatedViewAllProps: AllocatedViewAllProps = {
         title: _.upperFirst(tab),
         device: {
+          type: tab,
           /** Number of allocated resources */
-          allocated: props.data.resources.filter(
-            (resource) => (tab === 'all' || resource.device.type === tab) && resource.nodeIDs.length
+          allocated: data.resources.filter(
+            (resource: any) => (tab === 'all' || resource.device.type === tab) && resource.nodeIDs.length
           ).length,
           /** Total number of resources */
-          all: props.data.resources.filter((resource) => tab === 'all' || resource.device.type === tab).length,
+          all: data.resources.filter((resource: any) => tab === 'all' || resource.device.type === tab).length,
         },
+        loading: resourceLoading,
       };
       const typeKey = tab === 'all' ? false : typeToVolumeKey[tab];
-      if (isAPIDeviceType(tab) && typeKey) {
-        const allVolume = props.data.resources
-          .filter((resource) => resource.device.type === tab)
-          .reduce((acc, resource) => acc + (resource.device[typeKey] ?? 0), 0);
+      if (isAPIDeviceType(tab) && typeKey !== false) {
+        const allVolume = data.resources
+          .filter((resource: any) => resource.device.type === tab)
+          .reduce((acc: number, resource: any) => acc + (resource.device[typeKey] ?? 0), 0);
         const unit = typeToUnit(tab, allVolume);
-        const allocatedVolume = props.data.resources
-          .filter((resource) => resource.device.type === tab && resource.nodeIDs.length)
-          .reduce((acc, resource) => acc + (resource.device[typeKey] ?? 0), 0);
+        const allocatedVolume = data.resources
+          .filter((resource: any) => resource.device.type === tab && resource.nodeIDs.length)
+          .reduce((acc: number, resource: any) => acc + (resource.device[typeKey] ?? 0), 0);
         AllocatedViewAllProps.volume = {
           /** Number of allocated volumes */
           allocated: formatUnitValue(tab, allocatedVolume, unit),
@@ -248,6 +285,7 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
           /** Volume display unit */
           unit: unit,
         };
+        AllocatedViewAllProps.loading = resourceLoading;
       }
       return AllocatedViewAllProps;
     });
@@ -265,11 +303,18 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
   /** Create graph group components */
   const graphGroups = (
     <Stack>
-      <Group justify='flex-end' mt={15} mb={-40}>
-        <DatePicker />
+      <Group justify='flex-end' mt={15} mb={-40} style={{ zIndex: 1000 }}>
+        <DisplayPeriodPicker value={props.dateRange} onChange={props.setDateRange} />
       </Group>
       {graphTitles.map((title, index) => (
-        <GraphGroup title={`${t('Performance')}(${title})`} items={getGraph(title)} key={index} noHeader={true} />
+        <GraphGroup
+          title={`${t('Performance')}(${title})`}
+          items={getGraph(title)}
+          key={index}
+          noHeader={true}
+          dateRange={props.dateRange}
+          setDateRange={props.setDateRange}
+        />
       ))}
     </Stack>
   );

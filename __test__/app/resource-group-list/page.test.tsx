@@ -17,6 +17,8 @@
 import React from 'react';
 
 import useSWRImmutable from 'swr/immutable';
+import UserEvent from '@testing-library/user-event';
+import { screen } from '@testing-library/react';
 
 import { render } from '@/shared-modules/__test__/test-utils';
 import { MessageBox, PageHeader } from '@/shared-modules/components';
@@ -27,6 +29,7 @@ import ResourceGroupList from '@/app/[lng]/resource-group-list/page';
 import { useResourceGroupListFilter } from '@/utils/hooks/useResourceGroupListFilter';
 import { useColumns } from '@/utils/hooks/resource-group-list/useColumns';
 import { dummyAPIResourceGroups } from '@/utils/dummy-data/resource-group-list/dummyAPIResourceGroups';
+import { usePermission } from '@/shared-modules/utils/hooks';
 
 jest.mock('swr/immutable', () => ({
   __esModule: true,
@@ -38,6 +41,7 @@ jest.mock('@/shared-modules/utils/hooks', () => ({
   useQuery: jest.fn(),
   useMSW: jest.fn(),
   useLoading: jest.fn(),
+  usePermission: jest.fn(),
 }));
 jest.mock('@/shared-modules/components', () => ({
   ...jest.requireActual('@/shared-modules/components'),
@@ -62,6 +66,7 @@ describe('Resource Group List', () => {
     (useColumns as jest.Mock).mockImplementation(() => ({
       columns: undefined,
     }));
+    (usePermission as jest.Mock).mockReset().mockReturnValue(true);
   });
 
   test('The PageHeader is correctly receiving the title and breadcrumb list', () => {
@@ -103,5 +108,32 @@ describe('Resource Group List', () => {
     expect(givenProps.type).toBe('error');
     expect(givenProps.title).toBe('Error occurred');
     expect(givenProps.message).toBe('');
+  });
+
+  test('Click on the Add button opens the modal (with manage-permission)', async () => {
+    const openModal = jest.fn();
+    (useColumns as jest.Mock).mockImplementation(() => ({
+      columns: undefined,
+      records: [],
+      openModal,
+    }));
+    render(<ResourceGroupList />);
+    const addButton = screen.getByRole('button', { name: 'Add' });
+    await UserEvent.click(addButton);
+    expect(addButton).toBeEnabled();
+  });
+
+  test('Click on the Add button opens the modal (without manage-permission)', async () => {
+    (usePermission as jest.Mock).mockReturnValue(false);
+    const openModal = jest.fn();
+    (useColumns as jest.Mock).mockImplementation(() => ({
+      columns: undefined,
+      records: [],
+      openModal,
+    }));
+    render(<ResourceGroupList />);
+    const addButton = screen.getByRole('button', { name: 'Add' });
+    await UserEvent.click(addButton);
+    expect(addButton).toBeDisabled();
   });
 });

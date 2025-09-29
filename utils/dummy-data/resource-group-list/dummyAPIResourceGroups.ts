@@ -37,6 +37,7 @@ export const dummyAPIResourceGroup1: APIResourceGroup = {
       annotation: {
         available: true,
       },
+      detected: true,
       nodeIDs: ['1'],
     },
     {
@@ -52,6 +53,7 @@ export const dummyAPIResourceGroup1: APIResourceGroup = {
       annotation: {
         available: true,
       },
+      detected: true,
       nodeIDs: ['2'],
     },
   ],
@@ -78,6 +80,7 @@ export const dummyAPIResourceGroup2: APIResourceGroup = {
       annotation: {
         available: true,
       },
+      detected: true,
       nodeIDs: ['3'],
     },
     {
@@ -93,6 +96,7 @@ export const dummyAPIResourceGroup2: APIResourceGroup = {
       annotation: {
         available: true,
       },
+      detected: true,
       nodeIDs: ['4'],
     },
   ],

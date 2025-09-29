@@ -16,7 +16,7 @@
 
 import { ReactElement } from 'react';
 
-import { cleanup, screen } from '@testing-library/react';
+import { cleanup, renderHook, screen } from '@testing-library/react';
 import UserEvent from '@testing-library/user-event';
 import { DateRangePicker, PageLink } from '@/shared-modules/components';
 import { render } from '@/shared-modules/__test__/test-utils';
@@ -24,12 +24,27 @@ import { render } from '@/shared-modules/__test__/test-utils';
 import { useColumns } from '@/utils/hooks/resource-group-list/useColumns';
 import { ResourceGroupListFilter } from '@/utils/hooks/useResourceGroupListFilter';
 import { dummyAPPResourceGroups } from '@/utils/dummy-data/resource-group-list/dummyAPPResourceGroups';
+import { usePermission } from '@/shared-modules/utils/hooks';
 
 jest.mock('@/shared-modules/components', () => ({
   __esModule: true,
   ...jest.requireActual('@/shared-modules/components'),
   PageLink: jest.fn(),
   DateRangePicker: jest.fn(),
+}));
+
+jest.mock('@/shared-modules/styles/styles', () => ({
+  __esModule: true,
+  ...jest.requireActual('@/shared-modules/styles/styles'),
+  useColorStyles: jest.fn(() => ({
+    red: { color: 'red', backgroundColor: 'red' },
+    blue: { color: 'blue', backgroundColor: 'blue' },
+  })),
+}));
+
+jest.mock('@/shared-modules/utils/hooks', () => ({
+  ...jest.requireActual('@/shared-modules/utils/hooks'),
+  usePermission: jest.fn(),
 }));
 
 const dummyResourceGroupFilter: ResourceGroupListFilter = {
@@ -54,15 +69,21 @@ const dummyResourceGroupFilter: ResourceGroupListFilter = {
 };
 const selectedAccessors = ['name', 'description', 'id', 'createdAt', 'updatedAt'];
 
+const openModal = jest.fn();
+
 describe('useColumns', () => {
   beforeEach(() => {
     // Run before each test
     jest.clearAllMocks();
+    openModal.mockReset();
+    (usePermission as jest.Mock).mockReset().mockReturnValue(true);
   });
   test('It returns column information of type DataTableColumn (all visible)', () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
 
-    expect(columns).toHaveLength(5);
+    expect(columns).toHaveLength(6);
     // Name column
     expect(columns[0].accessor).toBe('name');
     expect(columns[0].title).toBe('Name');
@@ -93,12 +114,20 @@ describe('useColumns', () => {
     expect(columns[4].sortable).toBeTruthy();
     expect(columns[4].hidden).toBeFalsy();
     expect(columns[4].filtering).toBeTruthy();
+    // Action column
+    expect(columns[5].accessor).toBe('actions');
+    expect(columns[5].title).toBe('');
+    expect(columns[5].sortable).toBeFalsy();
+    expect(columns[5].hidden).toBeFalsy();
+    expect(columns[5].filtering).toBeFalsy();
   });
 
   test('It returns column information of type DataTableColumn (all hidden)', () => {
-    const columns = useColumns(dummyResourceGroupFilter, []);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, [], openModal));
 
-    expect(columns).toHaveLength(5);
+    expect(columns).toHaveLength(6);
     // Name column
     expect(columns[0].accessor).toBe('name');
     expect(columns[0].title).toBe('Name');
@@ -129,10 +158,18 @@ describe('useColumns', () => {
     expect(columns[4].sortable).toBeTruthy();
     expect(columns[4].hidden).toBeTruthy();
     expect(columns[4].filtering).toBeTruthy();
+    // Action column
+    expect(columns[5].accessor).toBe('actions');
+    expect(columns[5].title).toBe('');
+    expect(columns[5].sortable).toBeFalsy();
+    expect(columns[5].hidden).toBeFalsy();
+    expect(columns[5].filtering).toBeFalsy();
   });
 
   test('That the name is rendered', async () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
     const column = columns.find((column) => column.accessor === 'name');
     if (!column || !column.render) {
       throw new Error('undefined');
@@ -143,7 +180,9 @@ describe('useColumns', () => {
   });
 
   test('The query is updated when the name is entered', async () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
     const column = columns.find((column) => column.accessor === 'name');
     render(column?.filter as ReactElement);
 
@@ -159,7 +198,9 @@ describe('useColumns', () => {
   });
 
   test('The query is updated when the description is entered', async () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
     const column = columns.find((column) => column.accessor === 'description');
     render(column?.filter as ReactElement);
 
@@ -175,7 +216,9 @@ describe('useColumns', () => {
   });
 
   test('The query is updated when the ID is entered', async () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
     const column = columns.find((column) => column.accessor === 'id');
     render(column?.filter as ReactElement);
 
@@ -191,7 +234,9 @@ describe('useColumns', () => {
   });
 
   test('That the createdAt is rendered', async () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
     const column = columns.find((column) => column.accessor === 'createdAt');
     if (!column || !column.render) {
       throw new Error('undefined');
@@ -206,7 +251,9 @@ describe('useColumns', () => {
   });
 
   test('That the updatedAt is rendered', async () => {
-    const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
     const column = columns.find((column) => column.accessor === 'updatedAt');
     if (!column || !column.render) {
       throw new Error('undefined');
@@ -223,7 +270,9 @@ describe('useColumns', () => {
   test.each(['createdAt', 'updatedAt'])(
     'That the date range filter component receives the expected arguments (%s)',
     async (accessor: string) => {
-      const columns = useColumns(dummyResourceGroupFilter, selectedAccessors);
+      const {
+        result: { current: columns },
+      } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
       const column = columns.find((column) => column.accessor === accessor) as {
         filter: (params: { close: () => void }) => React.ReactNode;
       };
@@ -233,4 +282,77 @@ describe('useColumns', () => {
       expect(DateRangePicker).toHaveBeenCalledTimes(1);
     }
   );
+
+  test('That the actions column is rendered (with manage-permission)', async () => {
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
+    const column = columns.find((column) => column.accessor === 'actions');
+    if (!column || !column.render) {
+      throw new Error('undefined');
+    }
+
+    // Render a default group row
+    render(column.render(dummyAPPResourceGroups[0], 0) as ReactElement);
+    let editButton = screen.getByRole('button', { name: 'Edit' });
+    expect(editButton).toBeDisabled();
+    await UserEvent.click(editButton);
+    expect(openModal).not.toHaveBeenCalled();
+
+    let deleteButton = screen.getByRole('button', { name: 'Delete' });
+    expect(deleteButton).toBeDisabled();
+    await UserEvent.click(deleteButton);
+    expect(openModal).not.toHaveBeenCalled();
+
+    cleanup();
+
+    // Render a not default group row
+    render(column.render(dummyAPPResourceGroups[1], 0) as ReactElement);
+    editButton = screen.getByRole('button', { name: 'Edit' });
+    expect(editButton).toBeEnabled();
+    await UserEvent.click(editButton);
+    expect(openModal).toHaveBeenCalledWith({ operation: 'edit', rg: dummyAPPResourceGroups[1] });
+
+    deleteButton = screen.getByRole('button', { name: 'Delete' });
+    expect(deleteButton).toBeEnabled();
+    await UserEvent.click(deleteButton);
+    expect(openModal).toHaveBeenCalledWith({ operation: 'delete', rg: dummyAPPResourceGroups[1] });
+  });
+
+  test('That the actions column is rendered (without manage-permission)', async () => {
+    (usePermission as jest.Mock).mockReturnValue(false);
+    const {
+      result: { current: columns },
+    } = renderHook(() => useColumns(dummyResourceGroupFilter, selectedAccessors, openModal));
+    const column = columns.find((column) => column.accessor === 'actions');
+    if (!column || !column.render) {
+      throw new Error('undefined');
+    }
+
+    // Render a default group row
+    render(column.render(dummyAPPResourceGroups[0], 0) as ReactElement);
+    let editButton = screen.getByRole('button', { name: 'Edit' });
+    expect(editButton).toBeDisabled();
+    await UserEvent.click(editButton);
+    expect(openModal).not.toHaveBeenCalled();
+
+    let deleteButton = screen.getByRole('button', { name: 'Delete' });
+    expect(deleteButton).toBeDisabled();
+    await UserEvent.click(deleteButton);
+    expect(openModal).not.toHaveBeenCalled();
+
+    cleanup();
+
+    // Render a not default group row
+    render(column.render(dummyAPPResourceGroups[1], 0) as ReactElement);
+    editButton = screen.getByRole('button', { name: 'Edit' });
+    expect(editButton).toBeDisabled();
+    await UserEvent.click(editButton);
+    expect(openModal).not.toHaveBeenCalled();
+
+    deleteButton = screen.getByRole('button', { name: 'Delete' });
+    expect(deleteButton).toBeDisabled();
+    await UserEvent.click(deleteButton);
+    expect(openModal).not.toHaveBeenCalled();
+  });
 });

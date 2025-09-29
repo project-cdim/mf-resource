@@ -49,6 +49,7 @@ const cxlSwitch: APIcxlswitch = {
         ],
       },
       resourceGroupIDs: [],
+      detected: true,
       nodeIDs: ['node1'],
     },
     {
@@ -71,6 +72,7 @@ const cxlSwitch: APIcxlswitch = {
         ],
       },
       resourceGroupIDs: [],
+      detected: false,
       nodeIDs: ['node1'],
     },
   ],

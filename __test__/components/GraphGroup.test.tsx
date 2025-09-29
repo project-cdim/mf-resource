@@ -73,6 +73,7 @@ const histogramViewProps: HistogramViewProps = {
   title: 'Histogram Title 1',
   data: singleData,
   valueFormatter: () => `formatter`,
+  loading: false,
 };
 
 const storageGraphViewProps: StorageGraphViewProps = {
@@ -82,6 +83,7 @@ const storageGraphViewProps: StorageGraphViewProps = {
     allocated: 50 * 1024 ** 4,
     overall: 100 * 1024 ** 4,
   },
+  loading: false,
 };
 
 describe('GraphGroup', () => {
@@ -170,6 +172,7 @@ describe('GraphGroup', () => {
         { type: 'histogram', props: histogramViewProps },
         { type: 'storage', props: storageGraphViewProps },
       ],
+      loading: false,
     };
     render(<GraphGroup {...props} />);
     expect(screen.getAllByTestId('gridcol')[0].getAttribute('title')).toBe('12');

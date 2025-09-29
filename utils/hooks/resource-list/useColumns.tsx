@@ -20,11 +20,17 @@ import { DataTableColumn } from 'mantine-datatable';
 import { useTranslations } from 'next-intl';
 
 import { PageLink, TextInputForTableFilter, MultiSelectForTableFilter } from '@/shared-modules/components';
-import { APIDeviceAvailable, APIDeviceHealth, APIDeviceState, APIDeviceType } from '@/shared-modules/types';
+import {
+  APIDeviceAvailable,
+  APIDeviceDetection,
+  APIDeviceHealth,
+  APIDeviceState,
+  APIDeviceType,
+} from '@/shared-modules/types';
 
 import { APPResource } from '@/types';
 
-import { AvailableToIcon, HealthToIcon, StateToIcon } from '@/components';
+import { AvailableToIcon, DetectionStatusToIcon, HealthToIcon, StateToIcon } from '@/components';
 
 import { ResourceListFilter } from '@/utils/hooks/useResourceListFilter';
 
@@ -125,6 +131,59 @@ export const useColumns = (
         />
       ),
       filtering: resourceFilter.query.states.length > 0,
+    },
+    {
+      accessor: 'detected',
+      title: t('Detection Status'),
+      sortable: true,
+      hidden: !selectedAccessors.includes('detected'),
+      render: ({ detected }) => {
+        return (
+          <Group gap={5}>
+            {DetectionStatusToIcon(detected)}
+            {detected ? t('Detected') : t('Not Detected')}
+          </Group>
+        );
+      },
+      filter: (
+        <MultiSelectForTableFilter
+          label={t('Detection Status')}
+          options={resourceFilter.selectOptions.detection}
+          value={resourceFilter.query.detection}
+          setValue={(value) => resourceFilter.setQuery.detection(value as APIDeviceDetection[])}
+        />
+      ),
+      filtering: resourceFilter.query.detection.length > 0,
+    },
+    {
+      accessor: 'resourceGroups',
+      title: t('Resource Group'),
+      sortable: true,
+      hidden: !selectedAccessors.includes('resourceGroups'),
+      filter: (
+        <>
+          <TextInputForTableFilter
+            label={t('Resource Group')}
+            value={resourceFilter.query.resourceGroups}
+            setValue={resourceFilter.setQuery.resourceGroups}
+          />
+        </>
+      ),
+      render: ({ resourceGroups }) => (
+        <Stack gap={0}>
+          {resourceGroups.map(({ id, name }) => (
+            <PageLink
+              title={t('Resource Group Details')}
+              path={'/cdim/res-resource-group-detail'}
+              query={{ id: id }}
+              key={id}
+            >
+              {name !== '' ? name : id}
+            </PageLink>
+          ))}
+        </Stack>
+      ),
+      filtering: resourceFilter.query.resourceGroups !== '',
     },
     {
       accessor: 'cxlSwitchId',

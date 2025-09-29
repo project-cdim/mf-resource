@@ -18,115 +18,54 @@ import React from 'react';
 
 import { render } from '@/shared-modules/__test__/test-utils';
 import { MessageBox, PageHeader } from '@/shared-modules/components';
-import { APIresources } from '@/shared-modules/types';
 
 import ResourceList from '@/app/[lng]/resource-list/page';
-import useSWRImmutable from 'swr/immutable';
+import { useResourceListTableData, ResourceListTable } from '@/components';
+import { APPResource } from '@/types';
 
-const resData: APIresources = {
-  count: 3,
-  resources: [
-    {
-      annotation: {
-        available: true,
+const data: APPResource[] = [
+  {
+    id: '0001',
+    type: 'CPU',
+    health: 'OK',
+    state: 'Enabled',
+    detected: true,
+    resourceGroups: [
+      {
+        id: '10000000-0000-7000-8000-000000000001',
+        name: 'name rgrpDesca1',
       },
-      device: {
-        baseSpeedMHz: 4000,
-        deviceID: 'res101',
-        deviceSwitchInfo: 'CXL11',
-        links: [
-          {
-            deviceID: 'res202',
-            type: 'memory',
-          },
-        ],
-        status: {
-          health: 'Warning',
-          state: 'Enabled',
-        },
-        type: 'CPU',
-      },
-      resourceGroupIDs: [],
-      nodeIDs: [],
-    },
-    {
-      annotation: {
-        available: false,
-      },
-      device: {
-        baseSpeedMHz: 4000,
-        deviceID: 'res102',
-        deviceSwitchInfo: 'CXL11',
-        links: [
-          {
-            deviceID: 'res203',
-            type: 'memory',
-          },
-          {
-            deviceID: 'res302',
-            type: 'storage',
-          },
-          {
-            deviceID: 'res401',
-            type: 'networkInterface',
-          },
-        ],
-        status: {
-          health: 'OK',
-          state: 'Disabled',
-        },
-        type: 'CPU',
-      },
-      resourceGroupIDs: [],
-      nodeIDs: [],
-    },
-    {
-      annotation: {
-        available: true,
-      },
-      device: {
-        deviceID: 'res103',
-        deviceSwitchInfo: 'CXL11',
-        links: [],
-        status: {
-          health: 'OK',
-          state: 'Enabled',
-        },
-        type: 'Accelerator',
-      },
-      resourceGroupIDs: [],
-      nodeIDs: [],
-    },
-  ],
-};
+    ],
+    cxlSwitchId: '',
+    nodeIDs: ['0001'],
+    resourceAvailable: 'Unavailable',
+  },
+];
 
-jest.mock('swr/immutable', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
-jest.mock('mantine-datatable');
 jest.mock('@/shared-modules/utils/hooks', () => ({
   ...jest.requireActual('@/shared-modules/utils/hooks'),
   useMSW: jest.fn(),
-  useLoading: jest.fn(),
+  useLoading: jest.fn().mockReturnValue(false),
 }));
 jest.mock('@/shared-modules/components', () => ({
   ...jest.requireActual('@/shared-modules/components'),
   PageHeader: jest.fn(),
   MessageBox: jest.fn(),
 }));
-jest.mock('@/components/ResourceListTable');
+jest.mock('@/components/ResourceListTable', () => ({
+  ResourceListTable: jest.fn(() => <div>Resource List Table</div>),
+  useResourceListTableData: jest.fn(() => ({
+    data: data,
+    errors: [undefined, undefined],
+    isValidating: false,
+    mutate: jest.fn(),
+  })),
+}));
 
 describe('Resource list', () => {
   beforeEach(() => {
     // run before each test
     jest.clearAllMocks();
-    // @ts-ignore
-    useSWRImmutable.mockImplementation(() => ({
-      data: resData,
-      error: null,
-      mutate: jest.fn(),
-    }));
   });
 
   test('The PageHeader is correctly receiving the title and breadcrumb list', () => {
@@ -135,42 +74,92 @@ describe('Resource list', () => {
     const givenProps = PageHeader.mock.lastCall[0]; // The first argument of the last call
     expect(givenProps.pageTitle).toBe('Resources.list');
     expect(givenProps.items).toEqual([{ title: 'Resource Management' }, { title: 'Resources.list' }]);
+    // @ts-ignore
+    const tableGivenProps = ResourceListTable.mock.lastCall[0]; // The first argument of the last call
+    expect(tableGivenProps.selectedAccessors).toEqual([
+      'id',
+      'type',
+      'health',
+      'state',
+      'detected',
+      'resourceGroups',
+      'cxlSwitchId',
+      'nodeIDs',
+      'resourceAvailable',
+    ]);
+    expect(tableGivenProps.data).toEqual(data);
+    expect(tableGivenProps.loading).toBe(false);
   });
 
-  test('When the server returns an error, a message is displayed', () => {
-    // @ts-ignore
-    useSWRImmutable.mockImplementation(() => ({
-      error: {
-        message: 'Error occurred',
-        response: {
-          data: {
-            message: 'Error Message',
+  test('When the server returns errors, messages are displayed', () => {
+    (useResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      errors: [
+        {
+          message: 'Error occurred first',
+          response: {
+            data: {
+              message: 'Error Message first',
+            },
           },
         },
-      },
+        {
+          message: 'Error occurred second',
+          response: {
+            data: {
+              message: 'Error Message second',
+            },
+          },
+        },
+      ],
+      isValidating: false,
       mutate: jest.fn(),
-    }));
+    });
+
     render(<ResourceList />);
+
+    expect(MessageBox).toHaveBeenCalledTimes(2);
+
     // @ts-ignore
-    const givenProps = MessageBox.mock.lastCall[0]; // The first argument of the last call
-    expect(givenProps.type).toBe('error');
-    expect(givenProps.title).toBe('Error occurred');
-    expect(givenProps.message).toBe('Error Message');
+    const firstCallProps = MessageBox.mock.calls[0][0]; // The first argument of the first call
+    expect(firstCallProps.type).toBe('error');
+    expect(firstCallProps.title).toBe('Error occurred first');
+    expect(firstCallProps.message).toBe('Error Message first');
+    // @ts-ignore
+    const secondCallProps = MessageBox.mock.calls[1][0]; // The first argument of the second call
+    expect(secondCallProps.type).toBe('error');
+    expect(secondCallProps.title).toBe('Error occurred second');
+    expect(secondCallProps.message).toBe('Error Message second');
   });
 
-  test('When unable to connect to the server, a message is displayed', async () => {
-    // @ts-ignore
-    useSWRImmutable.mockImplementation(() => ({
-      error: {
-        message: 'Error occurred',
-      },
+  test('When unable to connect to the server, messages are displayed', async () => {
+    (useResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      errors: [
+        {
+          message: 'Error occurred first',
+        },
+        {
+          message: 'Error occurred second',
+        },
+      ],
+      isValidating: false,
       mutate: jest.fn(),
-    }));
+    });
+
     render(<ResourceList />);
+
+    expect(MessageBox).toHaveBeenCalledTimes(2);
+
     // @ts-ignore
-    const givenProps = MessageBox.mock.lastCall[0]; // The first argument of the last call
-    expect(givenProps.type).toBe('error');
-    expect(givenProps.title).toBe('Error occurred');
-    expect(givenProps.message).toBe('');
+    const firstCallProps = MessageBox.mock.calls[0][0]; // The first argument of the first call
+    expect(firstCallProps.type).toBe('error');
+    expect(firstCallProps.title).toBe('Error occurred first');
+    expect(firstCallProps.message).toBe('');
+    // @ts-ignore
+    const secondCallProps = MessageBox.mock.calls[1][0]; // The first argument of the second call
+    expect(secondCallProps.type).toBe('error');
+    expect(secondCallProps.title).toBe('Error occurred second');
+    expect(secondCallProps.message).toBe('');
   });
 });

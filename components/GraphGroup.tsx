@@ -17,10 +17,16 @@
 import { Grid, Group, Stack, Text, Title } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 
-import { DatePicker, GraphView, GraphViewProps } from '@/shared-modules/components';
+import { GraphView, GraphViewProps } from '@/shared-modules/components';
 import { GRAPH_CARD_HEIGHT } from '@/shared-modules/constant';
 
-import { HistogramView, HistogramViewProps, StorageGraphView, StorageGraphViewProps } from '@/components';
+import {
+  HistogramView,
+  HistogramViewProps,
+  StorageGraphView,
+  StorageGraphViewProps,
+  DisplayPeriodPicker,
+} from '@/components';
 
 /** Represents an item in a graph group.  */
 export type GraphGroupItem = {
@@ -43,6 +49,10 @@ export type GraphGroupProps = {
   items: GraphGroupItem[];
   /** Whether to hide the header of the graph group */
   noHeader?: boolean;
+  /** Date range for the DisplayPeriodPicker */
+  dateRange: [Date, Date];
+  /** Setter for the date range */
+  setDateRange: (range: [Date, Date]) => void;
 };
 
 /**
@@ -55,12 +65,12 @@ export const GraphGroup = (props: GraphGroupProps) => {
   const t = useTranslations();
   const WIDE_SPAN = 12;
   const NARROW_SPAN = 6;
-  const items = props.items?.map(({ type, props, isFullWidth }, index) => {
+  const items = props.items?.map(({ type, props: itemProps, isFullWidth }, index) => {
     return (
       <Grid.Col span={isFullWidth ? WIDE_SPAN : NARROW_SPAN} key={index} h={GRAPH_CARD_HEIGHT}>
-        {type === 'graphView' && <GraphView {...(props as GraphViewProps)} />}
-        {type === 'histogram' && <HistogramView {...(props as HistogramViewProps)} />}
-        {type === 'storage' && <StorageGraphView {...(props as StorageGraphViewProps)} />}
+        {type === 'graphView' && <GraphView {...(itemProps as GraphViewProps)} />}
+        {type === 'histogram' && <HistogramView {...(itemProps as HistogramViewProps)} />}
+        {type === 'storage' && <StorageGraphView {...(itemProps as StorageGraphViewProps)} />}
       </Grid.Col>
     );
   });
@@ -79,7 +89,7 @@ export const GraphGroup = (props: GraphGroupProps) => {
               <Title order={2} fz='lg'>
                 {t('Performance')}
               </Title>
-              <DatePicker />
+              <DisplayPeriodPicker value={props.dateRange} onChange={props.setDateRange} />
             </Group>
             {items.length === 0 ? <Text>{t('No data')}</Text> : <></>}
           </>

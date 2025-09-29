@@ -20,9 +20,11 @@ import { APIDeviceAvailable, APIDeviceHealth, APIDeviceState, APIDeviceType } fr
 export type APPResource = {
   id: string;
   type: APIDeviceType;
-  state: APIDeviceState;
   health: APIDeviceHealth;
-  resourceAvailable: APIDeviceAvailable;
-  nodeIDs: string[] | [];
+  state: APIDeviceState;
+  detected: boolean;
+  resourceGroups: { id: string; name: string }[];
   cxlSwitchId: string;
+  nodeIDs: string[] | [];
+  resourceAvailable: APIDeviceAvailable;
 };

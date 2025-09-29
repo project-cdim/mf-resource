@@ -39,6 +39,7 @@ export const Standard: Story = {
     title: 'Title1',
     valueFormatter: () => 'valueFormatter',
     data: singleData,
+    loading: false,
   },
 };
 
@@ -47,5 +48,6 @@ export const Stack: Story = {
     title: 'Stack',
     valueFormatter: () => 'valueFormatter',
     data: stackData,
+    loading: false,
   },
 };

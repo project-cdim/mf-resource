@@ -23,7 +23,7 @@ export type APIResourceGroup = {
   description: string;
   createdAt: string;
   updatedAt: string;
-  resources: APIresource[];
+  resources?: APIresource[]; // Optional, only if withResources=true
 };
 export type APIResourceGroups = {
   count: number;

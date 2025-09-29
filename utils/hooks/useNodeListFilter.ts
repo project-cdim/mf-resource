@@ -19,7 +19,7 @@ import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useTranslations } from 'next-intl';
 
-import { useQuery } from '@/shared-modules/utils/hooks';
+import { useQueryArrayObject } from '@/shared-modules/utils/hooks';
 import { isAllStringIncluded, isExistanceSelected } from '@/shared-modules/utils';
 
 import { APPNode } from '@/types';
@@ -55,35 +55,6 @@ export type NodeListFilter = {
   };
 };
 
-type NodeListQuery = {
-  connected?: NumberOptionValue[];
-  disabled?: NumberOptionValue[];
-  warning?: NumberOptionValue[];
-  critical?: NumberOptionValue[];
-  unavailable?: NumberOptionValue[];
-};
-
-/**
- * Custom hook that returns a NodeListQuery object based on the current query parameters.
- * The NodeListQuery object contains arrays of connected, disabled, warning, critical, and unavailable values.
- *
- * @returns The NodeListQuery object.
- */
-const useNodeListQuery = (): Required<NodeListQuery> => {
-  const query = useQuery();
-  return useMemo(
-    () => ({
-      // Store as an array (empty array if undefined)
-      connected: [(query.connected as NumberOptionValue | NumberOptionValue[]) || []].flat(2),
-      disabled: [(query.disabled as NumberOptionValue | NumberOptionValue[]) || []].flat(2),
-      warning: [(query.warning as NumberOptionValue | NumberOptionValue[]) || []].flat(2),
-      critical: [(query.critical as NumberOptionValue | NumberOptionValue[]) || []].flat(2),
-      unavailable: [(query.unavailable as NumberOptionValue | NumberOptionValue[]) || []].flat(2),
-    }),
-    [query]
-  );
-};
-
 /**
  * Custom hook for node list filtering
  *
@@ -106,13 +77,13 @@ export const useNodeListFilter = (records: APPNode[]): NodeListFilter => {
     { value: 'exist', label: t('1 or more') },
   ];
 
-  const queryObject = useNodeListQuery();
+  const queryObject = useQueryArrayObject();
   useEffect(() => {
-    setConnectedQuery(queryObject.connected);
-    setDisabledQuery(queryObject.disabled);
-    setWarningQuery(queryObject.warning);
-    setCriticalQuery(queryObject.critical);
-    setUnavailableQuery(queryObject.unavailable);
+    setConnectedQuery(queryObject.connected as NumberOptionValue[]);
+    setDisabledQuery(queryObject.disabled as NumberOptionValue[]);
+    setWarningQuery(queryObject.warning as NumberOptionValue[]);
+    setCriticalQuery(queryObject.critical as NumberOptionValue[]);
+    setUnavailableQuery(queryObject.unavailable as NumberOptionValue[]);
   }, [queryObject]);
 
   const filteredRecords = useMemo(() => {

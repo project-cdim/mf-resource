@@ -51,6 +51,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: ['res10101'],
       },
     ],
@@ -87,6 +88,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10102'],
       },
       {
@@ -110,6 +112,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: ['res10102'],
       },
     ],
@@ -146,6 +149,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: ['res10102'],
       },
       {
@@ -169,6 +173,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: ['res10102'],
       },
     ],
@@ -205,6 +210,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
       {
@@ -228,6 +234,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10206'],
       },
       {
@@ -251,6 +258,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
     ],
@@ -287,6 +295,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: [],
       },
       {
@@ -310,6 +319,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
     ],
@@ -341,6 +351,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: ['res10101', 'res10102'],
       },
       {
@@ -364,6 +375,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
       {
@@ -382,6 +394,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10101', 'res10102'],
       },
       {
@@ -400,6 +413,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
       {
@@ -418,6 +432,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
       {
@@ -436,6 +451,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10102'],
       },
       {
@@ -454,6 +470,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: [],
       },
       {
@@ -472,6 +489,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10101'],
       },
       {
@@ -490,6 +508,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10101'],
       },
       {
@@ -508,6 +527,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10101'],
       },
       {
@@ -526,6 +546,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: true,
         nodeIDs: ['res10102'],
       },
       {
@@ -544,6 +565,7 @@ const chassisList: APIChassis[] = [
         annotation: {
           available: false,
         },
+        detected: false,
         nodeIDs: ['res10101'],
       },
     ],

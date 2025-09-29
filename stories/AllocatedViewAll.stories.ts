@@ -38,6 +38,7 @@ export const Standard: Story = {
   args: {
     title: 'Test All with Volume',
     device: {
+      type: 'CPU',
       allocated: 30,
       all: 120,
     },
@@ -46,12 +47,14 @@ export const Standard: Story = {
       all: '520',
       unit: 'cores',
     },
+    loading: false,
   },
 };
 export const EmptyTitle: Story = {
   args: {
     title: '',
     device: {
+      type: 'CPU',
       allocated: 30,
       all: 120,
     },
@@ -60,21 +63,25 @@ export const EmptyTitle: Story = {
       all: '520',
       unit: 'cores',
     },
+    loading: false,
   },
 };
 export const EmptyVolume: Story = {
   args: {
     title: 'empty volume',
     device: {
+      type: 'CPU',
       allocated: 30,
       all: 120,
     },
+    loading: false,
   },
 };
 export const DeviceAllZero: Story = {
   args: {
     title: 'device all zero',
     device: {
+      type: 'CPU',
       allocated: 30,
       all: 0,
     },
@@ -83,5 +90,6 @@ export const DeviceAllZero: Story = {
       all: '520',
       unit: 'cores',
     },
+    loading: false,
   },
 };

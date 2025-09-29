@@ -33,6 +33,7 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+const LOADING_FLAG = false;
 
 export const Standard: Story = {
   args: {
@@ -41,13 +42,16 @@ export const Standard: Story = {
       {
         title: 'Item 1',
         device: {
+          type: 'CPU',
           allocated: 30,
           all: 120,
         },
+        loading: LOADING_FLAG,
       },
       {
         title: 'Item 2',
         device: {
+          type: 'CPU',
           allocated: 40,
           all: 140,
         },
@@ -56,6 +60,7 @@ export const Standard: Story = {
           all: '520',
           unit: 'cores',
         },
+        loading: LOADING_FLAG,
       },
     ],
   },
@@ -67,13 +72,16 @@ export const EmptyTitle: Story = {
       {
         title: 'Item 1',
         device: {
+          type: 'CPU',
           allocated: 30,
           all: 120,
         },
+        loading: LOADING_FLAG,
       },
       {
         title: 'Item 2',
         device: {
+          type: 'CPU',
           allocated: 40,
           all: 140,
         },
@@ -82,6 +90,7 @@ export const EmptyTitle: Story = {
           all: '520',
           unit: 'cores',
         },
+        loading: LOADING_FLAG,
       },
     ],
   },

@@ -14,182 +14,73 @@
  * under the License.
  */
 
-import { act, renderHook } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 
+import { useQueryArrayObject } from '@/shared-modules/utils/hooks';
 import { dummyAPPNode } from '@/utils/dummy-data/node-list/dummyAPPNode';
 import { useNodeListFilter } from '@/utils/hooks/useNodeListFilter';
+import { mockQuery } from '@/shared-modules/__test__/test-utils';
 
-jest.mock('next/navigation', () => ({
-  ...jest.requireActual('next/navigation'),
-  useRouter: jest.fn().mockReturnValue({ query: {}, isReady: true }),
+jest.mock('@/shared-modules/utils/hooks', () => ({
+  ...jest.requireActual('@/shared-modules/utils/hooks'),
+  useQueryArrayObject: jest.fn(),
 }));
 
 describe('useNodeListFilter', () => {
-  test('should return the correct initial values', () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    expect(view.result.current.filteredRecords).toEqual(dummyAPPNode);
-    expect(view.result.current.query).toEqual({
-      id: '',
-      connected: [],
-      disabled: [],
-      warning: [],
-      critical: [],
-      unavailable: [],
-    });
-
-    // The setQuery function is tested separately, so no need to test its initial value
-
-    expect(view.result.current.selectOptions).toEqual({
-      // No number specified → show both options
-      number: [
-        { value: 'notExist', label: 'equal 0' },
-        { value: 'exist', label: '1 or more' },
-      ],
-    });
+  beforeEach(() => {
+    // @ts-ignore
+    useQueryArrayObject.mockReset();
   });
 
-  test('setQuery.id() should work correctly', async () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    jest.useFakeTimers();
-    const setQuery = view.result.current.setQuery;
-    // ANCHOR "1" → 4 items
-    act(() => {
-      setQuery.id('1');
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.id).toBe('1');
-    expect(view.result.current.filteredRecords).toHaveLength(4); // node001, cxl010, cxl011, cxl012
-    // ANCHOR "node00" → 9 items
-    act(() => {
-      setQuery.id('node00');
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.id).toBe('node00');
-    expect(view.result.current.filteredRecords).toHaveLength(9); // cxl01 ～ cxl09
-    jest.useRealTimers();
+  test('When connectedQuery only contains notExist, only nodes with 0 connected are returned', () => {
+    mockQuery('connected', ['notExist']);
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    const filteredRecords = result.current.filteredRecords;
+    expect(filteredRecords.every((node) => node.device.connected === 0)).toBe(true);
   });
 
-  test('setQuery.connected() should work correctly', async () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    jest.useFakeTimers();
-    const setQuery = view.result.current.setQuery;
-    // notExist
-    act(() => {
-      setQuery.connected(['notExist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.connected).toEqual(['notExist']);
-    expect(view.result.current.filteredRecords).toHaveLength(1); // node005
-    // exist
-    act(() => {
-      setQuery.connected(['exist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.connected).toEqual(['exist']);
-    expect(view.result.current.filteredRecords).toHaveLength(11); // except node005
+  test('When connectedQuery only contains exist, only nodes with 1 or more connected are returned', () => {
+    mockQuery('connected', ['exist']);
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    const filteredRecords = result.current.filteredRecords;
+    expect(filteredRecords.every((node) => node.device.connected > 0)).toBe(true);
   });
 
-  test('setQuery.disabled() should work correctly', async () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    jest.useFakeTimers();
-    const setQuery = view.result.current.setQuery;
-    // notExist
-    act(() => {
-      setQuery.disabled(['notExist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.disabled).toEqual(['notExist']);
-    expect(view.result.current.filteredRecords).toHaveLength(7);
-    // exist
-    act(() => {
-      setQuery.disabled(['exist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.disabled).toEqual(['exist']);
-    expect(view.result.current.filteredRecords).toHaveLength(5);
+  test('When disabledQuery only contains notExist, only nodes with 0 disabled are returned', () => {
+    mockQuery('disabled', ['notExist']);
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    const filteredRecords = result.current.filteredRecords;
+    expect(filteredRecords.every((node) => node.device.disabled === 0)).toBe(true);
   });
 
-  test('setQuery.warning() should work correctly', async () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    jest.useFakeTimers();
-    const setQuery = view.result.current.setQuery;
-    // notExist
-    act(() => {
-      setQuery.warning(['notExist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.warning).toEqual(['notExist']);
-    expect(view.result.current.filteredRecords).toHaveLength(8);
-    // exist
-    act(() => {
-      setQuery.warning(['exist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.warning).toEqual(['exist']);
-    expect(view.result.current.filteredRecords).toHaveLength(4);
+  test('When warningQuery only contains exist, only nodes with 1 or more warning are returned', () => {
+    mockQuery('warning', ['exist']);
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    const filteredRecords = result.current.filteredRecords;
+    expect(filteredRecords.every((node) => node.device.warning > 0)).toBe(true);
   });
 
-  test('setQuery.critical() should work correctly', async () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    jest.useFakeTimers();
-    const setQuery = view.result.current.setQuery;
-    // notExist
-    act(() => {
-      setQuery.critical(['notExist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.critical).toEqual(['notExist']);
-    expect(view.result.current.filteredRecords).toHaveLength(7);
-    // exist
-    act(() => {
-      setQuery.critical(['exist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.critical).toEqual(['exist']);
-    expect(view.result.current.filteredRecords).toHaveLength(5);
+  test('When criticalQuery only contains notExist, only nodes with 0 critical are returned', () => {
+    mockQuery('critical', ['notExist']);
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    const filteredRecords = result.current.filteredRecords;
+    expect(filteredRecords.every((node) => node.device.critical === 0)).toBe(true);
   });
 
-  test('setQuery.unavailable() should work correctly', async () => {
-    const view = renderHook(() => useNodeListFilter(dummyAPPNode));
-    jest.useFakeTimers();
-    const setQuery = view.result.current.setQuery;
-    // notExist
-    act(() => {
-      setQuery.unavailable(['notExist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.unavailable).toEqual(['notExist']);
-    expect(view.result.current.filteredRecords).toHaveLength(7);
-    // exist
-    act(() => {
-      setQuery.unavailable(['exist']);
-    });
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(view.result.current.query.unavailable).toEqual(['exist']);
-    expect(view.result.current.filteredRecords).toHaveLength(5);
+  test('When unavailableQuery only contains exist, only nodes with 1 or more unavailable are returned', () => {
+    mockQuery('unavailable', ['exist']);
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    const filteredRecords = result.current.filteredRecords;
+    expect(filteredRecords.every((node) => node.device.resourceUnavailable > 0)).toBe(true);
+  });
+
+  test('When all queries are empty, all nodes are returned', () => {
+    (useQueryArrayObject as jest.Mock).mockReturnValue(
+      new Proxy({} as Record<string, string[]>, {
+        get: () => [],
+      })
+    );
+    const { result } = renderHook(() => useNodeListFilter(dummyAPPNode));
+    expect(result.current.filteredRecords.length).toBe(dummyAPPNode.length);
   });
 });

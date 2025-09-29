@@ -51,6 +51,7 @@ export const chassisList: APIChassis[] = [
         annotation: {
           available: true,
         },
+        detected: true,
         nodeIDs: [],
       },
     ],

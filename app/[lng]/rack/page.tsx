@@ -30,9 +30,9 @@ import { APIresource, isAPIresource } from '@/shared-modules/types';
 import { fetcher } from '@/shared-modules/utils';
 import { useLoading } from '@/shared-modules/utils/hooks';
 
-import { APIChassis, APIrack } from '@/types';
+import { APIChassis, APIrack, APPResource } from '@/types';
 
-import { ResourceListTable } from '@/components';
+import { ResourceListTable, useFormatResourceListTableData } from '@/components';
 
 const RackUnitCount = 42;
 
@@ -59,7 +59,13 @@ const RackName = (props: { name: string }) => {
 const ButtonImport = () => {
   const t = useTranslations();
   return (
-    <Button variant='outline' size='xs' data-disabled style={{ '&[dataDisabled]': { pointerEvents: 'all' } }}>
+    <Button
+      variant='outline'
+      size='xs'
+      data-disabled
+      style={{ '&[dataDisabled]': { pointerEvents: 'all' } }}
+      disabled={true}
+    >
       {t('Import')}
     </Button>
   );
@@ -457,6 +463,7 @@ const ChassisDetail = (props: {
 type PropsRackResourceList = {
   loading: boolean;
   selectedChassis: APIChassis | undefined;
+  resources: APPResource[];
 };
 
 /**
@@ -466,13 +473,23 @@ type PropsRackResourceList = {
  * @param selectedChassis - The selected chassis object containing the resources to display.
  * @returns List of resources in a rack.
  */
-const RackResourceList = ({ loading, selectedChassis }: PropsRackResourceList) => {
+const RackResourceList = ({ loading, selectedChassis, resources }: PropsRackResourceList) => {
   const t = useTranslations();
-  const selectedAccessors = ['id', 'type', 'health', 'state', 'cxlSwitchId', 'nodeIDs', 'resourceAvailable'];
+  const selectedAccessors = [
+    'id',
+    'type',
+    'health',
+    'state',
+    'detected',
+    'resourceGroups',
+    'cxlSwitchId',
+    'nodeIDs',
+    'resourceAvailable',
+  ];
   return (
     <Stack>
       <h3>{t('Resources in {target}', { target: selectedChassis?.name || t('Selected chassis') })}</h3>
-      <ResourceListTable selectedAccessors={selectedAccessors} data={selectedChassis?.resources} loading={loading} />
+      <ResourceListTable selectedAccessors={selectedAccessors} data={resources} loading={loading} />
     </Stack>
   );
 };
@@ -480,9 +497,10 @@ const RackResourceList = ({ loading, selectedChassis }: PropsRackResourceList) =
 /**
  * Rack component represents a rack with its elevations and resources.
  */
+// eslint-disable-next-line complexity
 const Rack = () => {
   const t = useTranslations();
-  const rackId = 'rack111';
+  const rackId = `${process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID}` && 'rack111';
   const items = [{ title: t('Resource Management') }, { title: t('Rack Elevations') }];
   const [selectedChassis, setSelectedChassis] = useState<APIChassis>();
   // const mswInitializing = useMSW();
@@ -497,6 +515,10 @@ const Rack = () => {
     fetcher
   );
   const [data, setData] = useState<APIrack | undefined>(rawData);
+  const { formattedData, rgError, rgIsValidating, rgMutate } = useFormatResourceListTableData(
+    selectedChassis?.resources
+  );
+
   useEffect(() => {
     if (!rawData) {
       setData(rawData);
@@ -523,7 +545,15 @@ const Rack = () => {
   return (
     <>
       <Group justify='space-between' align='flex-end'>
-        <PageHeader pageTitle={t('Rack Elevations')} items={items} mutate={mutate} loading={loading} />
+        <PageHeader
+          pageTitle={t('Rack Elevations')}
+          items={items}
+          mutate={() => {
+            mutate();
+            rgMutate();
+          }}
+          loading={loading || rgIsValidating}
+        />
         <Group>
           <RackName name={data?.name || ''} />
           <ButtonImport />
@@ -535,7 +565,7 @@ const Rack = () => {
           <MessageBox type='error' title={error.message} message={error.response?.data.message || ''} />
         </>
       )}
-
+      {rgError && <MessageBox type='error' title={rgError.message} message={rgError.response?.data.message || ''} />}
       <Space h='xl' />
 
       <Grid>
@@ -559,7 +589,11 @@ const Rack = () => {
 
       <Space h='xl' />
 
-      <RackResourceList loading={loading} selectedChassis={selectedChassis} />
+      <RackResourceList
+        loading={loading || rgIsValidating}
+        selectedChassis={selectedChassis}
+        resources={formattedData}
+      />
     </>
   );
 };

@@ -78,9 +78,21 @@ describe('StateToIcon', () => {
     }
   });
 
-  test('When the state is undefined, there is no icon', () => {
+  test('When the state is unknown, there is no icon', () => {
     const state = 'hogehoge';
     const StateIconWithInfo = StateToIcon(state);
+    expect(StateIconWithInfo).toBeNull();
+  });
+
+  test('When the state is undefined, there is no icon', () => {
+    const state = undefined;
+    const StateIconWithInfo = StateToIcon(state);
+    expect(StateIconWithInfo).toBeNull();
+  });
+
+  test('When the state is null, there is no icon', () => {
+    const state = null;
+    const StateIconWithInfo = StateToIcon(state as unknown as undefined);
     expect(StateIconWithInfo).toBeNull();
   });
 });

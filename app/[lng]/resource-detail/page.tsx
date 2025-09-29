@@ -16,37 +16,21 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { Box, Button, Group, LoadingOverlay, ScrollArea, Stack, Text, Title } from '@mantine/core';
-import axios from 'axios';
-import type { AxiosResponse } from 'axios';
-import _ from 'lodash';
-import { useLocale, useTranslations } from 'next-intl';
+import { ScrollArea, Stack, Title } from '@mantine/core';
+import { useTranslations } from 'next-intl';
 import useSWRImmutable from 'swr/immutable';
+import { AxiosResponse } from 'axios';
 
-import {
-  CardLoading,
-  ConfirmModal,
-  DatePicker,
-  GraphView,
-  HorizontalTable,
-  MessageBox,
-  PageHeader,
-  PageLink,
-} from '@/shared-modules/components';
-import { GRAPH_CARD_HEIGHT, LOADING_DURATION, MANAGE_RESOURCE } from '@/shared-modules/constant';
-import { APIPromQL, APIresource, isAPIDeviceType } from '@/shared-modules/types';
-import {
-  fetcher,
-  formatEnergyValue,
-  formatNetworkTransferValue,
-  formatPercentValue,
-  parseGraphData,
-} from '@/shared-modules/utils';
-import { useConfirmModal, useIdFromQuery, useLoading, usePermission } from '@/shared-modules/utils/hooks';
+import { CardLoading, MessageBox, PageHeader } from '@/shared-modules/components';
+import { APIresource } from '@/shared-modules/types';
+import { fetcher } from '@/shared-modules/utils';
+import { useIdFromQuery, useLoading, useMetricDateRange } from '@/shared-modules/utils/hooks';
 
-import { AvailableToIcon, HealthToIcon, JsonTable, StateToIcon } from '@/components';
+import { JsonTable, ResourceDetailPerformance, ResourceDetailSummary } from '@/components';
+import { useGraphData } from '@/utils/hooks/resource-detail/useGraphData';
+import { useResourceGroupsData } from '@/utils/hooks/useResourceGroupsData';
 
 /**
  * Resource Detail Page
@@ -72,19 +56,24 @@ const ResourceDetail = () => {
     fetcher
   );
 
-  const [metricStartDate, setMetricStartDate] = useState<string>();
-  const [metricEndDate, setMetricEndDate] = useState<string>();
-  // Message display for constraint condition information
-  const [successInfo, setSuccessInfo] = useState<{ operation: 'Exclude' | 'Include' } | undefined>(undefined);
+  //** Get resource group data */
+  const {
+    error: resourceGroupsError,
+    validating: resourceGroupsValidating,
+    mutate: resourceGroupsMutate,
+  } = useResourceGroupsData(); // Fetch resource groups data
 
-  useEffect(() => {
-    const currentDate = new Date();
-    setMetricEndDate(currentDate.toISOString());
-    const OneMonthBeforeDate = currentDate;
-
-    OneMonthBeforeDate.setMonth(currentDate.getMonth() - 1);
-    setMetricStartDate(OneMonthBeforeDate.toISOString());
-  }, []);
+  const [successInfo, setSuccessInfo] = useState<
+    { operation: 'Exclude' | 'Include' | 'UpdateResourceGroup' } | undefined
+  >(undefined);
+  const [dateRange, setDateRange] = useState<[Date, Date]>(() => {
+    const today = new Date();
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+    return [oneMonthAgo, today];
+  });
+  const [metricStartDate, metricEndDate] = useMetricDateRange(dateRange);
 
   const { graphData, graphError, graphValidating, graphMutate } = useGraphData(data, metricStartDate, metricEndDate);
 
@@ -92,46 +81,65 @@ const ResourceDetail = () => {
   const reload = () => {
     mutate();
     graphMutate();
+    resourceGroupsMutate();
     setSuccessInfo(undefined);
   };
 
-  const resourceLoading = useLoading(isValidating || mswInitializing);
-  const loading = useLoading(isValidating || graphValidating || mswInitializing);
+  const loading = useLoading(isValidating || mswInitializing);
+  const summaryLoading = useLoading(isValidating || resourceGroupsValidating || mswInitializing);
+  const performanceLoading = useLoading(isValidating || graphValidating || mswInitializing);
 
   return (
     <>
       <Stack gap='xl'>
         <PageHeader pageTitle={t('Resource Details')} items={items} mutate={reload} loading={loading} />
         {/* Success message (for target inclusion/exclusion) */}
-        <Messages successInfo={successInfo} setSuccessInfo={setSuccessInfo} error={error} graphError={graphError} />
-        <Summary
-          data={data}
-          doOnSuccess={(axiosRes: AxiosResponse) => {
-            // Function called on successful inclusion/exclusion configuration
-            // axiosRes is the response from axios (put)
-            const { available } = axiosRes.data;
-            setSuccessInfo({ operation: available ? 'Include' : 'Exclude' }); // Show success dialog
-            mutate(); // Retrieve data again and update display
-          }}
-          loading={resourceLoading}
+        <Messages
+          successInfo={successInfo}
+          setSuccessInfo={setSuccessInfo}
+          error={error}
+          graphError={graphError}
+          resourceGroupsError={resourceGroupsError}
         />
-        <Performance
+        <ResourceDetailSummary
+          data={data}
+          doOnSuccess={(axiosResOrOperation: AxiosResponse | { operation: string }) => {
+            // Branch processing based on parameter type: AxiosResponse or operation object
+            if ('operation' in axiosResOrOperation) {
+              // Object case (e.g., for resource group update)
+              setSuccessInfo({
+                operation: axiosResOrOperation.operation as 'Exclude' | 'Include' | 'UpdateResourceGroup',
+              });
+              mutate();
+            } else {
+              // AxiosResponse case (e.g., for Available change)
+              const { available } = axiosResOrOperation.data;
+              setSuccessInfo({ operation: available ? 'Include' : 'Exclude' });
+              mutate();
+            }
+          }}
+          loading={summaryLoading}
+        />
+        <ResourceDetailPerformance
           data={data}
           graphData={graphData}
           metricStartDate={metricStartDate}
           metricEndDate={metricEndDate}
-          loading={loading}
+          loading={performanceLoading}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
         />
-        <DetailTable loading={resourceLoading} data={data} />
+        <DetailTable loading={loading} data={data} />
       </Stack>
     </>
   );
 };
 
 const Messages = (props: {
-  successInfo: { operation: 'Exclude' | 'Include' } | undefined;
+  successInfo: { operation: 'Exclude' | 'Include' | 'UpdateResourceGroup' } | undefined;
   setSuccessInfo: CallableFunction;
   error: { message: string; response: { data: { message: string } } } | undefined;
+  resourceGroupsError: { message: string } | undefined;
   graphError: { message: string } | undefined;
 }) => {
   const t = useTranslations();
@@ -142,282 +150,25 @@ const Messages = (props: {
       {successInfo && (
         <MessageBox
           type='success'
-          title={t('The resource settings have been successfully updated to {operation}', {
-            operation: t(successInfo.operation).toLowerCase(),
-          })}
+          title={
+            successInfo.operation === 'UpdateResourceGroup'
+              ? t('The resource group has been successfully {operation}', {
+                  operation: t('Edit').toLowerCase(),
+                })
+              : t('The resource settings have been successfully updated to {operation}', {
+                  operation: t(successInfo.operation).toLowerCase(),
+                })
+          }
           message={undefined}
           close={() => setSuccessInfo(undefined)}
         />
       )}
-      {error && <MessageBox type='error' title={error.message} message={error.response?.data.message || ''} />}
+      {error && <MessageBox type='error' title={error.message} message={error.response?.data?.message || ''} />}
+      {/* Resource group error */}
+      {props.resourceGroupsError && <MessageBox type='error' title={props.resourceGroupsError.message} message={''} />}
+      {/* Graph error */}
       {graphError && <MessageBox type='error' title={graphError.message} message={''} />}
     </>
-  );
-};
-
-const useGraphData = (
-  data: APIresource | undefined,
-  metricStartDate: string | undefined,
-  metricEndDate: string | undefined
-) => {
-  const energyMetric = data ? `${data.device.type}_metricEnergyJoules_reading` : undefined;
-  const deviceID = data?.device.deviceID;
-  /** Get graph data */
-  const getUsageQuery = (deviceType: string | undefined) => {
-    switch (deviceType) {
-      case 'memory':
-        // Memory usage rate: calculate the percentage from the capacity and round to 2 decimal places
-        return `label_replace(round(({__name__=~"memory_usedMemory",job=~"${deviceID}"}/(${data?.device.capacityMiB}*1024)*100)*100)/100,"data_label","${data?.device.type}_usage","","")`;
-      case 'storage':
-        // Storage usage rate: calculate the percentage from the drive capacity and round to 2 decimal places
-        return `label_replace(round(({__name__=~"storage_disk_amountUsedDisk",job=~"${deviceID}"}/(${data?.device.driveCapacityBytes})*100)*100)/100,"data_label","${data?.device.type}_usage","","")`;
-      case 'networkInterface': {
-        // Network transfer speed: get the increase in the last 1 hour and calculate the average increase per second (cannot be shorter than the Prometheus collection interval, e.g., 1s)
-        const bytesSent = 'networkInterface_networkInterfaceInformation_networkTraffic_bytesSent';
-        const bytesRecv = 'networkInterface_networkInterfaceInformation_networkTraffic_bytesRecv';
-        return `label_replace(sum(increase({__name__=~"${bytesSent}|${bytesRecv}}",job=~"${deviceID}"}))[1h]/3600,"data_label","${data?.device.type}_usage","","")`;
-      }
-      default:
-        return `label_replace({__name__=~"${deviceType}_usageRate",job=~"${deviceID}"},"data_label","${data?.device.type}_usage","","")`;
-    }
-  };
-  const energyQuery = `label_replace(increase({__name__=~"${energyMetric}",job=~"${deviceID}"}[1h])/3600,"data_label","${data?.device.type}_energy","","")`;
-  const usageQuery = getUsageQuery(data?.device.type);
-
-  const {
-    data: graphData,
-    error: graphError,
-    isValidating: graphValidating,
-    mutate: graphMutate,
-  } = useSWRImmutable<APIPromQL>(
-    data &&
-      isAPIDeviceType(data.device.type) &&
-      `${process.env.NEXT_PUBLIC_URL_BE_PERFORMANCE_MANAGER}/query_range?query=${energyQuery} or ${usageQuery}&start=${metricStartDate}&end=${metricEndDate}&step=1h`,
-    fetcher
-  );
-
-  return { graphData, graphError, graphValidating, graphMutate };
-};
-
-/**
- * Target inclusion/exclusion display and buttons
- *
- * @param props - The component props.
- * @returns The AvailableButton component.
- */
-const AvailableButton = (props: {
-  isAvailable: boolean | undefined;
-  deviceId: string | undefined;
-  doOnSuccess: CallableFunction;
-}) => {
-  const hasPermission = usePermission(MANAGE_RESOURCE);
-  const t = useTranslations();
-  const { isAvailable, doOnSuccess } = props;
-  const { openModal, closeModal, setError, isModalOpen, error } = useConfirmModal();
-  const title = isAvailable ? t('Exclude') : t('Include');
-  const availableIcon = AvailableToIcon(isAvailable ? 'Available' : 'Unavailable');
-  const submitChangeEnabled = (props: { isAvailable: boolean | undefined; deviceId: string | undefined }) => {
-    const reqData = { available: !isAvailable };
-    axios
-      .put(`${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources/${props.deviceId}/annotation`, reqData)
-      .then((res) => {
-        closeModal();
-        // Show API request success message
-        doOnSuccess(res);
-        return;
-      })
-      .catch((error) => {
-        setError(error);
-      });
-  };
-
-  return (
-    <>
-      <ConfirmModal
-        title={title}
-        subTitle={`${t('Device ID')} : ${props.deviceId}`}
-        message={isAvailable ? t('Do you want to exclude?') : t('Do you want to include?')}
-        submit={() => submitChangeEnabled({ isAvailable: isAvailable, deviceId: props.deviceId })}
-        errorTitle={t('Failed to configure {operation}', { operation: title.toLowerCase() })}
-        closeModal={closeModal}
-        error={error}
-        isModalOpen={isModalOpen}
-      />
-      <Group>
-        <Group gap={5}>
-          {availableIcon}
-          {isAvailable ? t('Included') : t('Excluded')}
-        </Group>
-
-        <Button size='xs' variant='outline' color='dark' onClick={openModal} disabled={!hasPermission}>
-          <Text size='14'>{isAvailable ? t('Exclude') : t('Include')}</Text>
-        </Button>
-      </Group>
-    </>
-  );
-};
-
-/**
- * Renders the summary component for a resource.
- *
- * @param props - The component props.
- * @returns The rendered summary component.
- */
-const Summary = (props: { data?: APIresource; doOnSuccess: CallableFunction; loading: boolean }) => {
-  const t = useTranslations();
-
-  let health;
-  let state;
-  let deviceType;
-  let deviceSwitchInfo;
-  let nodeIDs;
-  let available;
-  let deviceID;
-  if (props.data) {
-    health = props.data.device.status?.health;
-    state = props.data.device.status?.state;
-    deviceType = props.data.device.type;
-    deviceSwitchInfo = props.data.device.deviceSwitchInfo;
-    nodeIDs = props.data.nodeIDs;
-    available = props.data.annotation.available;
-    deviceID = props.data.device.deviceID;
-  }
-
-  const healthIcon = HealthToIcon(health);
-  const stateIcon = StateToIcon(state);
-
-  const tableData = [
-    { columnName: t('Type'), value: _.upperFirst(deviceType) },
-    {
-      columnName: t('Health'),
-      value: (
-        <Group gap={5}>
-          {healthIcon}
-          {health}
-        </Group>
-      ),
-    },
-    {
-      columnName: t('State'),
-      value: (
-        <Group gap={5}>
-          {stateIcon}
-          {state}
-        </Group>
-      ),
-    },
-    { columnName: t('CXL Switch'), value: deviceSwitchInfo },
-    {
-      columnName: t('Node'),
-      value: (
-        <Stack gap={0}>
-          {nodeIDs?.map((nodeId) => (
-            <PageLink path={'/cdim/res-node-detail'} query={{ id: nodeId }} key={nodeId}>
-              {nodeId}
-            </PageLink>
-          ))}
-        </Stack>
-      ),
-    },
-    {
-      columnName: t('Included in design'),
-      value: props.data && (
-        <AvailableButton isAvailable={available} deviceId={deviceID} doOnSuccess={props.doOnSuccess} />
-      ),
-    },
-  ];
-  return (
-    <Stack>
-      <CardLoading withBorder maw={'32em'} loading={props.loading}>
-        <Text fz='sm'>{t('Device ID')}</Text>
-        <Text fz='lg' fw={500}>
-          {deviceID}
-        </Text>
-      </CardLoading>
-      <HorizontalTable tableData={tableData} loading={props.loading} />
-    </Stack>
-  );
-};
-
-/**
- * Performance component displays the performance metrics for a resource.
- *
- * @param props - The component props.
- * @returns The Performance component.
- */
-const Performance = (props: {
-  data?: APIresource;
-  graphData?: APIPromQL;
-  metricStartDate?: string;
-  metricEndDate?: string;
-  loading: boolean;
-}) => {
-  const t = useTranslations();
-  const currentLanguage = useLocale();
-
-  const isNoData = !props.graphData?.data.result.length;
-
-  return (
-    <Stack>
-      <Group justify='space-between'>
-        <Title order={2} fz='lg'>
-          {t('Performance')}
-        </Title>
-        <DatePicker />
-      </Group>
-      {isNoData ? (
-        <Box pos='relative'>
-          <Text>{t('No data')}</Text>
-          <LoadingOverlay
-            visible={props.loading}
-            loaderProps={{ size: 'sm' }}
-            transitionProps={{ duration: LOADING_DURATION }}
-          />
-        </Box>
-      ) : (
-        <Group gap='1em' grow={true} h={GRAPH_CARD_HEIGHT}>
-          <GraphView
-            title={t('Energy Consumptions')}
-            data={parseGraphData(
-              props.graphData,
-              `${props.data?.device.type}_energy`,
-              currentLanguage,
-              props.metricStartDate,
-              props.metricEndDate
-            )}
-            valueFormatter={formatEnergyValue}
-            loading={props.loading}
-          />
-          {props.data?.device.type === 'networkInterface' ? (
-            <GraphView
-              title={t('Network Transfer Speed')}
-              data={parseGraphData(
-                props.graphData,
-                `${props.data?.device.type}_usage`,
-                currentLanguage,
-                props.metricStartDate,
-                props.metricEndDate
-              )}
-              valueFormatter={formatNetworkTransferValue}
-              loading={props.loading}
-            />
-          ) : (
-            <GraphView
-              title={t('Usage')}
-              data={parseGraphData(
-                props.graphData,
-                `${props.data?.device.type}_usage`,
-                currentLanguage,
-                props.metricStartDate,
-                props.metricEndDate
-              )}
-              valueFormatter={formatPercentValue}
-              loading={props.loading}
-            />
-          )}
-        </Group>
-      )}
-    </Stack>
   );
 };
 

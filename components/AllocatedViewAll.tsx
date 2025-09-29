@@ -14,9 +14,12 @@
  * under the License.
  */
 
-import { Card, Progress, Text, Title } from '@mantine/core';
+import { Group, Progress, Stack, Text, Title } from '@mantine/core';
 
 import { PERCENT } from '@/shared-modules/constant';
+import { CardLoading, PageLink } from '@/shared-modules/components';
+import { useTranslations } from 'next-intl';
+import { APIDeviceType } from '@/shared-modules/types';
 
 /**
  * Props for the AllocatedViewAll component
@@ -25,6 +28,7 @@ export type AllocatedViewAllProps = {
   /** Title */
   title: string;
   device?: {
+    type: APIDeviceType | 'all';
     /** Allocated resource count */
     allocated: number;
     /** Total resource count */
@@ -38,6 +42,8 @@ export type AllocatedViewAllProps = {
     /** Volume display unit */
     unit: string;
   };
+  /** Loading state */
+  loading: boolean;
 };
 
 /**
@@ -46,17 +52,46 @@ export type AllocatedViewAllProps = {
  * @returns JSX.Element displaying resource counts in a node configuration
  */
 export const AllocatedViewAll = (props: AllocatedViewAllProps) => {
-  const { device, volume } = props;
   return (
-    <Card withBorder>
+    <CardLoading withBorder h={'100%'} loading={props.loading}>
+      <AllocatedViewAllInner {...props} />
+    </CardLoading>
+  );
+};
+
+export const AllocatedViewAllInner = (props: Exclude<AllocatedViewAllProps, 'loading'>) => {
+  const { device, volume } = props;
+  const t = useTranslations();
+
+  const query: { allocatednode: string[]; type?: string[] } = {
+    allocatednode: ['Allocated'],
+  };
+  if (device && device?.type !== 'all') {
+    query.type = [device.type];
+  }
+  return (
+    <Stack justify='flex-end' h={'100%'} gap={5}>
       <Title order={2} size='h4' fw={500}>
         {props.title}
       </Title>
       {device && (
-        <Text fz='1.875rem' fw={600} mb='-0.5rem'>
+        <Group align='baseline' gap={'0.5em'} wrap='nowrap'>
           {/* ex. 25 / 100 */}
-          {`${device.allocated} / ${device.all}`}
-        </Text>
+          <PageLink
+            title={t('Resources.list')}
+            path='/cdim/res-resource-list'
+            query={query}
+            color='rgb(55 65 81 / var(--tw-text-opacity))'
+            display='block'
+          >
+            <Text fz='1.875rem' fw={600} lh={1}>
+              {device.allocated}
+            </Text>
+          </PageLink>
+          <Text fz='1.875rem' fw={600} lh={1}>
+            {`/ ${device.all}`}
+          </Text>
+        </Group>
       )}
       {volume ? (
         <Text fz='xl'>
@@ -70,6 +105,6 @@ export const AllocatedViewAll = (props: AllocatedViewAllProps) => {
         </Text>
       )}
       {device && <Progress value={(device.allocated / device.all) * PERCENT} size='xl' />}
-    </Card>
+    </Stack>
   );
 };

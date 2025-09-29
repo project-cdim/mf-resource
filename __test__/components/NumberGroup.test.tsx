@@ -39,6 +39,7 @@ const props: NumberGroupProps = {
         health: ['OK'],
         resourceAvailable: ['Available'],
       } /** Link destination parameters */,
+      loading: false,
     },
     {
       title: 'Title2',
@@ -52,6 +53,7 @@ const props: NumberGroupProps = {
         health: ['OK'],
         resourceAvailable: ['Unavailable'],
       } /** Link destination parameters */,
+      loading: false,
     },
   ],
 };

@@ -28,6 +28,7 @@ const props = {
   title: 'Title',
   number: 1234567890,
   link: 'http://www.xxx/',
+  loading: false,
 };
 
 const query: ResourceListQuery = {

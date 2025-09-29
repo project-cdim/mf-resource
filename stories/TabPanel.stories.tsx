@@ -21,8 +21,6 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { TabList, TabPanel } from '@/components';
 
-import { dummyResourcesDetail } from '@/utils/dummy-data/index/resources';
-
 const meta: Meta<typeof TabPanel> = {
   title: 'Components/TabPanel',
   component: TabPanel,
@@ -68,11 +66,8 @@ export const Standard: Story = {
           'graphicController',
           'virtualMedia',
         ]}
-        data={dummyResourcesDetail}
-        rangeGraphData={undefined}
-        singleGraphData={undefined}
-        startDate={undefined}
-        endDate={undefined}
+        dateRange={[new Date('2024-01-01'), new Date('2024-01-31')]}
+        setDateRange={() => {}}
       />
     </Tabs>
   ),
@@ -83,11 +78,8 @@ export const Summary: Story = {
       <TabList tabs={['summary']} />
       <TabPanel
         tabs={['summary']}
-        data={dummyResourcesDetail}
-        rangeGraphData={undefined}
-        singleGraphData={undefined}
-        startDate={undefined}
-        endDate={undefined}
+        dateRange={[new Date('2024-01-01'), new Date('2024-01-31')]}
+        setDateRange={() => {}}
       />
     </Tabs>
   ),
@@ -124,11 +116,8 @@ export const EmptyData: Story = {
           'graphicController',
           'virtualMedia',
         ]}
-        data={undefined}
-        rangeGraphData={undefined}
-        singleGraphData={undefined}
-        startDate={undefined}
-        endDate={undefined}
+        dateRange={[new Date('2024-01-01'), new Date('2024-01-31')]}
+        setDateRange={() => {}}
       />
     </Tabs>
   ),
@@ -140,11 +129,8 @@ export const SummaryEmpty: Story = {
       <TabList tabs={['summary']} />
       <TabPanel
         tabs={['summary']}
-        data={undefined}
-        rangeGraphData={undefined}
-        singleGraphData={undefined}
-        startDate={undefined}
-        endDate={undefined}
+        dateRange={[new Date('2024-01-01'), new Date('2024-01-31')]}
+        setDateRange={() => {}}
       />
     </Tabs>
   ),

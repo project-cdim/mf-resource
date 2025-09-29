@@ -39,6 +39,7 @@ export const Standard: Story = {
     title: 'Test',
     item: {
       device: {
+        type: 'CPU', // 必須プロパティを追加
         allocated: 25,
         all: 100,
       },
@@ -48,6 +49,7 @@ export const Standard: Story = {
         unit: 'cores',
       },
     },
+    loading: false,
   },
 };
 export const EmptyTitle: Story = {
@@ -55,6 +57,7 @@ export const EmptyTitle: Story = {
     title: '',
     item: {
       device: {
+        type: 'CPU',
         allocated: 25,
         all: 100,
       },
@@ -64,6 +67,7 @@ export const EmptyTitle: Story = {
         unit: 'cores',
       },
     },
+    loading: false,
   },
 };
 export const EmptyVolume: Story = {
@@ -71,10 +75,12 @@ export const EmptyVolume: Story = {
     title: 'empty volume',
     item: {
       device: {
+        type: 'CPU',
         allocated: 25,
         all: 100,
       },
     },
+    loading: false,
   },
 };
 export const DeviceAllZero: Story = {
@@ -82,6 +88,7 @@ export const DeviceAllZero: Story = {
     title: 'device all zero',
     item: {
       device: {
+        type: 'CPU',
         allocated: 25,
         all: 0,
       },
@@ -91,5 +98,6 @@ export const DeviceAllZero: Story = {
         unit: 'cores',
       },
     },
+    loading: false,
   },
 };

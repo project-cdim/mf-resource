@@ -16,14 +16,14 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Box, Group, Stack, Text, Title } from '@mantine/core';
 import _ from 'lodash';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWRImmutable from 'swr/immutable';
 
-import { CardLoading, DatePicker, GraphView, MessageBox, PageHeader } from '@/shared-modules/components';
+import { CardLoading, GraphView, MessageBox, PageHeader } from '@/shared-modules/components';
 import { GRAPH_CARD_HEIGHT, deviceTypeOrder } from '@/shared-modules/constant';
 import styles from '@/shared-modules/styles/styles.module.css';
 import { APIDeviceType, APIPromQL, APInode, APIresource, APIresourceForNodeDetail } from '@/shared-modules/types';
@@ -38,10 +38,12 @@ import {
   parseGraphData,
   typeToUnit,
   typeToVolumeKey,
+  createPromQLParams,
 } from '@/shared-modules/utils';
-import { useIdFromQuery, useLoading } from '@/shared-modules/utils/hooks';
-
-import { ResourceListTable } from '@/components';
+import { useIdFromQuery, useLoading, useMetricDateRange } from '@/shared-modules/utils/hooks';
+import { getStepFromRange } from '@/shared-modules/utils/graphParsers';
+import { DisplayPeriodPicker, ResourceListTable, useFormatResourceListTableData } from '@/components';
+import { APPResource } from '@/types';
 
 /**
  * Node Detail Page
@@ -60,20 +62,32 @@ const NodeDetail = () => {
   // const mswInitializing = useMSW();
   const mswInitializing = false; // Do not use MSW
 
-  const [metricStartDate, setMetricStartDate] = useState<string>();
-  const [metricEndDate, setMetricEndDate] = useState<string>();
-  useEffect(() => {
-    const currentDate = new Date();
-    setMetricEndDate(currentDate.toISOString());
-    const OneMonthBeforeDate = currentDate;
-    OneMonthBeforeDate.setMonth(currentDate.getMonth() - 1);
-    setMetricStartDate(OneMonthBeforeDate.toISOString());
-  }, []);
+  const [dateRange, setDateRange] = useState<[Date, Date]>(() => {
+    const today = new Date();
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+    return [oneMonthAgo, today];
+  });
+  const [metricStartDate, metricEndDate] = useMetricDateRange(dateRange);
 
   const { data, error, isValidating, mutate } = useSWRImmutable<APInode>(
     nodeId && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/nodes/${nodeId}`,
     fetcher
   );
+
+  // NOTE: According to the backend API specification, there is a premise that each resource can only belong to one node.
+  //       So nodeIDs will always be an array with a parent node id.
+  const resources = useMemo(
+    () =>
+      data?.resources.map((resource) => ({
+        ...resource,
+        nodeIDs: [nodeId],
+      })),
+    [data, nodeId]
+  );
+
+  const { formattedData, rgError, rgIsValidating, rgMutate } = useFormatResourceListTableData(resources);
 
   const { graphData, graphError, graphMutate, graphValidating, deviceTypes } = useGraphData(
     data,
@@ -84,6 +98,7 @@ const NodeDetail = () => {
   /** Function called when reload button is pressed */
   const reload = () => {
     mutate();
+    rgMutate();
     graphMutate();
   };
 
@@ -93,8 +108,9 @@ const NodeDetail = () => {
   return (
     <>
       <Stack gap='xl'>
-        <PageHeader pageTitle={t('Node Details')} items={items} mutate={reload} loading={loading} />
-        <Messages error={error} graphError={graphError} />
+        <PageHeader pageTitle={t('Node Details')} items={items} mutate={reload} loading={loading || rgIsValidating} />
+        <Messages error={error} graphError={graphError} rgError={rgError} />
+
         <Summary data={data} loading={nodeLoading} />
         {/* Resource Specifications */}
         <VolumeCards resources={data?.resources as APIresource[]} loading={nodeLoading} />
@@ -104,28 +120,27 @@ const NodeDetail = () => {
           startDate={metricStartDate}
           endDate={metricEndDate}
           loading={loading}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
         />
-        <ResourceList resources={data?.resources as APIresource[]} loading={nodeLoading} />
+        <ResourceList resources={formattedData} loading={nodeLoading || rgIsValidating} />
       </Stack>
     </>
   );
 };
 
-const Messages = (props: { error: any; graphError: any }) => {
-  const { error, graphError } = props;
+const Messages = (props: { error: any; graphError: any; rgError: any }) => {
+  const { error, graphError, rgError } = props;
   return (
     <>
       {error && <MessageBox type='error' title={error.message} message={error.response?.data.message || ''} />}
       {graphError && <MessageBox type='error' title={graphError.message} message={''} />}
+      {rgError && <MessageBox type='error' title={rgError.message} message={rgError.response?.data.message || ''} />}
     </>
   );
 };
 
-const useGraphData = (
-  data: APInode | undefined,
-  metricStartDate: string | undefined,
-  metricEndDate: string | undefined
-) => {
+const useGraphData = (data: APInode | undefined, metricStartDate: string, metricEndDate: string) => {
   // const [graphData, setGraphData] = useState<APIPromQL | undefined>(undefined);
   // const [graphError, setGraphError] = useState<Error | null>(null);
   // const [isValidating, setIsValidating] = useState<boolean>(false);
@@ -136,9 +151,12 @@ const useGraphData = (
   // List of device types
   const deviceTypes: APIDeviceType[] = [...new Set(data?.resources.map((resource) => resource.device.type))];
 
+  // Calculate step and window using getStepFromRange for consistency
+  const step = getStepFromRange(metricStartDate, metricEndDate);
+
   /** Create queries to get energy consumption (total difference) for each type */
   const makeEnergyQuery = (): string => {
-    const baseString = `label_replace(sum(increase({__name__=~"<type>_metricEnergyJoules_reading",job=~"${deviceIds}"}[1h])/3600),"data_label","<type>_energy","","")`;
+    const baseString = `label_replace(sum(increase({__name__=~"<type>_metricEnergyJoules_reading",job=~"${deviceIds}"}[${step}])/3600),"data_label","<type>_energy","","")`;
     const replacedStrings = deviceTypes.map((type) => baseString.replace(/<type>/g, type));
     return replacedStrings.join(' or ');
   };
@@ -147,7 +165,7 @@ const useGraphData = (
     const processorTypes = deviceTypes.filter((type) =>
       ['Accelerator', 'CPU', 'DSP', 'FPGA', 'GPU', 'UnknownProcessor'].includes(type)
     );
-    const baseString = `label_replace(avg({__name__=~"<type>_usageRate",job=~"${deviceIds}"}[1h]),"data_label","<type>_usage","","")`;
+    const baseString = `label_replace(avg({__name__=~"<type>_usageRate",job=~"${deviceIds}"}[${step}]),"data_label","<type>_usage","","")`;
     const replacedStrings = processorTypes.map((type) => baseString.replace(/<type>/g, type));
     return replacedStrings.join(' or ');
   };
@@ -162,7 +180,7 @@ const useGraphData = (
   const usageMemoryQuery =
     sumCapacityMiB === 0
       ? ''
-      : `label_replace(round((sum({__name__=~"memory_usedMemory",job=~"${deviceIds}"})/(${sumCapacityMiB}*1024)*100)*100)/100,"data_label","memory_usage","","")`;
+      : `label_replace(round((sum({__name__=~"memory_usedMemory",job=~"${deviceIds}"}[${step}])/(${sumCapacityMiB}*1024)*100)*100)/100,"data_label","memory_usage","","")`;
   /** Get storage usage (average) query
       Calculate the percentage from the capacity and round to 2 decimal places */
   const sumDriveCapacityBytes = data
@@ -172,14 +190,14 @@ const useGraphData = (
     : 0;
   const usageStorageQuery =
     deviceTypes.includes('storage') && sumDriveCapacityBytes
-      ? `label_replace(round((sum({__name__=~"storage_disk_amountUsedDisk",job=~"${deviceIds}"})/(${sumDriveCapacityBytes})*100)*100)/100,"data_label","storage_usage","","")`
+      ? `label_replace(round((sum({__name__=~"storage_disk_amountUsedDisk",job=~"${deviceIds}"}[${step}])/(${sumDriveCapacityBytes})*100)*100)/100,"data_label","storage_usage","","")`
       : '';
   /** Get network transfer speed (total) query
      Get the increase per hour and calculate the average increase per second (cannot be shorter than the collection interval of Prometheus, such as 1s) */
   const bytesSent = 'networkInterface_networkInterfaceInformation_networkTraffic_bytesSent';
   const bytesRecv = 'networkInterface_networkInterfaceInformation_networkTraffic_bytesRecv';
   const usageNetworkInterfaceQuery = deviceTypes.includes('networkInterface')
-    ? `label_replace(sum(increase({__name__=~"${bytesSent}|${bytesRecv}",job=~"${deviceIds}"}))[1h]/3600,"data_label","networkInterface_usage","","")`
+    ? `label_replace(sum(rate({__name__=~"${bytesSent}|${bytesRecv}",job=~"${deviceIds}"}[${step}])),"data_label","networkInterface_usage","","")`
     : '';
 
   const performanceQueries = [
@@ -192,23 +210,26 @@ const useGraphData = (
     .filter((item) => item !== '')
     .join(' or ');
 
-  const params = useMemo(() => {
-    const p = new URLSearchParams();
-    p.append('query', performanceQueries);
-    p.append('start', metricStartDate ?? '');
-    p.append('end', metricEndDate ?? '');
-    p.append('step', '1h');
-    return p;
-  }, [performanceQueries, metricStartDate, metricEndDate]);
+  // Create SWR key that includes metricStartDate and metricEndDate for re-fetching when they change
+  const swrKey = data
+    ? [
+        `${process.env.NEXT_PUBLIC_URL_BE_PERFORMANCE_MANAGER}/query_range`,
+        performanceQueries,
+        metricStartDate,
+        metricEndDate,
+        step,
+      ]
+    : null;
+
+  const getParams = () => createPromQLParams(performanceQueries, metricStartDate, metricEndDate, step);
 
   const {
     data: graphData,
     error: graphError,
     mutate: graphMutate,
     isValidating,
-  } = useSWRImmutable<APIPromQL>(
-    data && [`${process.env.NEXT_PUBLIC_URL_BE_PERFORMANCE_MANAGER}/query_range`, params],
-    ([url, params]: [string, URLSearchParams]) => fetcherForPromqlByPost(url, params)
+  } = useSWRImmutable<APIPromQL>(swrKey, ([url]: [string, string, string | undefined, string | undefined, string]) =>
+    fetcherForPromqlByPost(url, getParams())
   );
 
   return { graphData, graphError, graphMutate, graphValidating: isValidating, deviceTypes };
@@ -314,13 +335,17 @@ const NumberOrVolumeCard = (props: {
  * @param props.loading - Loading state.
  * @returns The Performance component.
  */
-const Performance = (props: {
+export type PerformanceProps = {
   graphData?: APIPromQL;
   types: APIDeviceType[];
   startDate: string | undefined;
   endDate: string | undefined;
   loading: boolean;
-}) => {
+  dateRange: [Date, Date];
+  setDateRange: (range: [Date, Date]) => void;
+};
+
+const Performance = (props: PerformanceProps) => {
   const t = useTranslations();
   const currentLanguage = useLocale();
 
@@ -346,7 +371,7 @@ const Performance = (props: {
         <Title order={2} fz='lg'>
           {t('Performance')}
         </Title>
-        <DatePicker />
+        <DisplayPeriodPicker value={props.dateRange} onChange={props.setDateRange} />
       </Group>
       <Box h={GRAPH_CARD_HEIGHT}>
         <GraphView
@@ -355,6 +380,7 @@ const Performance = (props: {
           valueFormatter={formatEnergyValue}
           stack={true}
           loading={props.loading}
+          dateRange={props.dateRange}
         />
       </Box>
       <Group grow={true} align='strech' h={GRAPH_CARD_HEIGHT}>
@@ -363,12 +389,14 @@ const Performance = (props: {
           data={processorGraphData}
           valueFormatter={formatPercentValue}
           loading={props.loading}
+          dateRange={props.dateRange}
         />
         <GraphView
           title={t('Memory Usage')}
           data={parseGraphData(props.graphData, 'memory_usage', currentLanguage, props.startDate, props.endDate)}
           valueFormatter={formatPercentValue}
           loading={props.loading}
+          dateRange={props.dateRange}
         />
       </Group>
       <Group grow={true} h={GRAPH_CARD_HEIGHT}>
@@ -377,6 +405,7 @@ const Performance = (props: {
           data={parseGraphData(props.graphData, 'storage_usage', currentLanguage, props.startDate, props.endDate)}
           valueFormatter={formatPercentValue}
           loading={props.loading}
+          dateRange={props.dateRange}
         />
         <GraphView
           title={t('Network Transfer Speed')}
@@ -389,6 +418,7 @@ const Performance = (props: {
           )}
           valueFormatter={formatNetworkTransferValue}
           loading={props.loading}
+          dateRange={props.dateRange}
         />
       </Group>
     </Stack>
@@ -447,10 +477,20 @@ const VolumeCards = (props: {
   );
 };
 
-const ResourceList = (props: { resources: APIresourceForNodeDetail[]; loading: boolean }) => {
+const ResourceList = (props: { resources: APPResource[]; loading: boolean }) => {
   const t = useTranslations();
 
-  const selectedAccessors = ['id', 'type', 'health', 'state', 'cxlSwitchId', 'resourceAvailable'];
+  const selectedAccessors = [
+    'id',
+    'type',
+    'health',
+    'state',
+    'detected',
+    'resourceGroups',
+    'cxlSwitchId',
+    'resourceAvailable',
+  ];
+
   return (
     <Stack>
       <Title order={2} fz='lg'>
@@ -460,7 +500,7 @@ const ResourceList = (props: { resources: APIresourceForNodeDetail[]; loading: b
         selectedAccessors={selectedAccessors}
         data={props.resources}
         loading={props.loading}
-        showAccessorSelector={false}
+        showAccessorSelector={true}
         showPagination={true}
       />
     </Stack>

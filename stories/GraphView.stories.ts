@@ -45,11 +45,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** Single graph */
+const defaultDateRange: [Date, Date] = [new Date('2024-01-01'), new Date('2024-01-31')];
+
 export const Standard: Story = {
   args: {
     title: 'Title',
     data: chartData,
     valueFormatter: () => 'valueFormatter',
+    dateRange: defaultDateRange,
   },
 };
 
@@ -68,6 +71,7 @@ export const WithLink: Story = {
       health: ['OK'],
       resourceAvailable: ['Available', 'Unavailable'],
     },
+    dateRange: defaultDateRange,
   },
 };
 
@@ -77,6 +81,7 @@ export const MultiData: Story = {
     title: 'Title',
     data: multiChartData,
     valueFormatter: () => 'valueFormatter',
+    dateRange: defaultDateRange,
   },
 };
 
@@ -84,16 +89,11 @@ export const MultiData: Story = {
 export const MultiDataStack: Story = {
   args: {
     title: 'Title',
-
     data: multiChartData,
     stack: true,
-
     valueFormatter: () => 'valueFormatter',
-
-    //
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };
@@ -102,14 +102,10 @@ export const MultiDataStack: Story = {
 export const MissingData: Story = {
   args: {
     title: 'Title',
-
     data: chartDataMissing,
-
     valueFormatter: () => 'valueFormatter',
-
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };
@@ -118,14 +114,10 @@ export const MissingData: Story = {
 export const MissingMultiData: Story = {
   args: {
     title: 'Title',
-
     data: multiChartDataMissing,
-
     valueFormatter: () => 'valueFormatter',
-
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };
@@ -134,15 +126,11 @@ export const MissingMultiData: Story = {
 export const MissingMultiDataStack: Story = {
   args: {
     title: 'Title',
-
     data: multiChartDataMissing,
     stack: true,
-
     valueFormatter: () => 'valueFormatter',
-
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };
@@ -151,15 +139,11 @@ export const MissingMultiDataStack: Story = {
 export const SingleDataStackLastZero: Story = {
   args: {
     title: 'Title',
-
     data: chartDataLastZero,
     stack: true,
-
     valueFormatter: () => 'valueFormatter',
-
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };
@@ -169,16 +153,11 @@ SingleDataStackLastZero.storyName = 'Single graph (last data is 0)';
 export const MultiDataStackLastZero: Story = {
   args: {
     title: 'Title',
-
     data: multiChartDataLastZero,
     stack: true,
-
     valueFormatter: () => 'valueFormatter',
-
-    //
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };
@@ -188,16 +167,11 @@ MultiDataStackLastZero.storyName = 'Multiple stacked graphs (last data is 0)';
 export const MultiDataLastZero: Story = {
   args: {
     title: 'Title',
-
     data: multiChartDataLastZero,
     stack: false,
-
     valueFormatter: () => 'valueFormatter',
-
-    //
-    /** Link destination */
+    dateRange: defaultDateRange,
     // link?: "string",
-    /** Link destination parameters */
     // query?: ResourceListQuery;
   },
 };

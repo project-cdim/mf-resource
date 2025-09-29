@@ -18,13 +18,16 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { ResourceListTable } from '@/components';
 
-import { dummyNodeDetail } from '@/utils/dummy-data/node-detail/nodes';
+import { dummyAPPResource } from '@/utils/dummy-data/resource-list/dummyAPPResource';
 
 const meta = {
   title: 'Components/ResourceListTable',
   component: ResourceListTable,
   parameters: {
     layout: 'centered',
+    nextjs: {
+      appDirectory: true,
+    },
   },
   tags: ['autodocs'],
   argTypes: {
@@ -36,23 +39,25 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const SELECTED_ACCESSORS = [
+  'id',
+  'type',
+  'health',
+  'state',
+  'detected',
+  'resourceGroups',
+  'cxlSwitchId',
+  'nodeIDs',
+  'resourceAvailable',
+];
+
 /** Default */
 export const Standard: Story = {
   args: {
     /** Selected accessors */
-    selectedAccessors: [
-      'id',
-      'type',
-      'health',
-      'state',
-      // 'powerConsumption',
-      // 'useRate',
-      'cxlSwitchId',
-      'nodeIDs',
-      'resourceAvailable',
-    ],
+    selectedAccessors: SELECTED_ACCESSORS,
     /** Data */
-    data: dummyNodeDetail.resources,
+    data: dummyAPPResource,
     /** Loading state */
     loading: false,
     /** Show accessor selector */
@@ -68,7 +73,7 @@ export const EmptySelectedAccessors: Story = {
     /** Selected accessors */
     selectedAccessors: [],
     /** Data */
-    data: dummyNodeDetail.resources,
+    data: dummyAPPResource,
     /** Loading state */
     loading: false,
     /** Show accessor selector */
@@ -82,17 +87,7 @@ export const EmptySelectedAccessors: Story = {
 export const EmptyData: Story = {
   args: {
     /** Selected accessors */
-    selectedAccessors: [
-      'id',
-      'type',
-      'health',
-      'state',
-      // 'powerConsumption',
-      // 'useRate',
-      'cxlSwitchId',
-      'nodeIDs',
-      'resourceAvailable',
-    ],
+    selectedAccessors: SELECTED_ACCESSORS,
     /** Data */
     data: [],
     /** Loading state */
@@ -108,19 +103,9 @@ export const EmptyData: Story = {
 export const LoadingTrue: Story = {
   args: {
     /** Selected accessors */
-    selectedAccessors: [
-      'id',
-      'type',
-      'health',
-      'state',
-      // 'powerConsumption',
-      // 'useRate',
-      'cxlSwitchId',
-      'nodeIDs',
-      'resourceAvailable',
-    ],
+    selectedAccessors: SELECTED_ACCESSORS,
     /** Data */
-    data: dummyNodeDetail.resources,
+    data: dummyAPPResource,
     /** Loading state */
     loading: true,
     /** Show accessor selector */
@@ -134,19 +119,9 @@ export const LoadingTrue: Story = {
 export const HiddenAccessorSelector: Story = {
   args: {
     /** Selected accessors */
-    selectedAccessors: [
-      'id',
-      'type',
-      'health',
-      'state',
-      // 'powerConsumption',
-      // 'useRate',
-      'cxlSwitchId',
-      'nodeIDs',
-      'resourceAvailable',
-    ],
+    selectedAccessors: SELECTED_ACCESSORS,
     /** Data */
-    data: dummyNodeDetail.resources,
+    data: dummyAPPResource,
     /** Loading state */
     loading: false,
     /** Show accessor selector */
@@ -160,19 +135,9 @@ export const HiddenAccessorSelector: Story = {
 export const HiddenPagination: Story = {
   args: {
     /** Selected accessors */
-    selectedAccessors: [
-      'id',
-      'type',
-      'health',
-      'state',
-      // 'powerConsumption',
-      // 'useRate',
-      'cxlSwitchId',
-      'nodeIDs',
-      'resourceAvailable',
-    ],
+    selectedAccessors: SELECTED_ACCESSORS,
     /** Data */
-    data: dummyNodeDetail.resources,
+    data: dummyAPPResource,
     /** Loading state */
     loading: false,
     /** Show accessor selector */

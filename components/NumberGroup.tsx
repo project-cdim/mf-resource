@@ -40,14 +40,16 @@ export const NumberGroup = (props: NumberGroupProps) => {
   });
   const items = props.items?.map((item) => (
     <Grid.Col span={span} key={props.title + item.title}>
-      <NumberView
+      <NumberView key={props.title + item.title} {...item} />
+      {/* <NumberView
         key={props.title + item.title}
         title={item.title}
         number={item.number}
         link={item.link}
         linkTitle={item.linkTitle}
         query={item.query}
-      />
+        loading={item.loading}
+      /> */}
     </Grid.Col>
   ));
 

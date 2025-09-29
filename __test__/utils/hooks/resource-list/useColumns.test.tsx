@@ -27,7 +27,11 @@ import { dummyAPPResource } from '@/utils/dummy-data/resource-list/dummyAPPResou
 import { useColumns } from '@/utils/hooks/resource-list/useColumns';
 import { ResourceListFilter } from '@/utils/hooks/useResourceListFilter';
 
+// Mock necessary components
 jest.mock('@/shared-modules/components/PageLink');
+jest.mock('@/components/DetectionStatusToIcon', () => ({
+  DetectionStatusToIcon: jest.fn(() => <span data-testid='mock-detection-icon' />),
+}));
 
 // Mocking mantine components
 jest.mock('@mantine/core', () => ({
@@ -35,6 +39,7 @@ jest.mock('@mantine/core', () => ({
   ...jest.requireActual('@mantine/core'),
   MultiSelect: jest.fn(),
   Checkbox: jest.fn(),
+  Group: jest.fn(({ children }) => <div>{children}</div>),
 }));
 
 const resourceFilter: ResourceListFilter = {
@@ -46,6 +51,7 @@ const resourceFilter: ResourceListFilter = {
     types: ['CPU', 'memory'],
     states: ['Enabled', 'Disabled'],
     healths: ['OK', 'Warning'],
+    detection: ['Detected', 'Not Detected'],
     available: ['Available', 'Unavailable'],
     nodeIDs: 'node001',
     cxlSwitchId: 'cxl001',
@@ -58,6 +64,7 @@ const resourceFilter: ResourceListFilter = {
     types: jest.fn(),
     states: jest.fn(),
     healths: jest.fn(),
+    detection: jest.fn(),
     available: jest.fn(),
     nodeIDs: jest.fn(),
     cxlSwitchId: jest.fn(),
@@ -72,6 +79,10 @@ const resourceFilter: ResourceListFilter = {
     ],
     state: ['Enabled', 'Disabled'],
     health: ['OK', 'Warning'],
+    detection: [
+      { value: 'Detected', label: 'Detected' },
+      { value: 'Not Detected', label: 'Not Detected' },
+    ],
     available: [
       { value: 'Available', label: 'Included' },
       { value: 'Unavailable', label: 'Excluded' },
@@ -83,7 +94,17 @@ const resourceFilter: ResourceListFilter = {
   },
 };
 
-const selectedAccessors = ['id', 'type', 'health', 'state', 'cxlSwitchId', 'nodeIDs', 'resourceAvailable'];
+const selectedAccessors = [
+  'id',
+  'type',
+  'health',
+  'state',
+  'detected',
+  'resourceGroups',
+  'cxlSwitchId',
+  'nodeIDs',
+  'resourceAvailable',
+];
 
 describe('useColumns', () => {
   beforeEach(() => {
@@ -93,7 +114,7 @@ describe('useColumns', () => {
 
   test('That it returns column information of type DataTableColumn', () => {
     const columns = useColumns(resourceFilter, selectedAccessors);
-    expect(columns).toHaveLength(7);
+    expect(columns).toHaveLength(9);
     expect(columns[0].accessor).toBe('id');
     expect(columns[0].hidden).toBe(false);
     expect(columns[1].accessor).toBe('type');
@@ -102,18 +123,22 @@ describe('useColumns', () => {
     expect(columns[2].hidden).toBe(false);
     expect(columns[3].accessor).toBe('state');
     expect(columns[3].hidden).toBe(false);
-    expect(columns[4].accessor).toBe('cxlSwitchId');
+    expect(columns[4].accessor).toBe('detected');
     expect(columns[4].hidden).toBe(false);
-    expect(columns[5].accessor).toBe('nodeIDs');
+    expect(columns[5].accessor).toBe('resourceGroups');
     expect(columns[5].hidden).toBe(false);
-    expect(columns[6].accessor).toBe('resourceAvailable');
+    expect(columns[6].accessor).toBe('cxlSwitchId');
     expect(columns[6].hidden).toBe(false);
+    expect(columns[7].accessor).toBe('nodeIDs');
+    expect(columns[7].hidden).toBe(false);
+    expect(columns[8].accessor).toBe('resourceAvailable');
+    expect(columns[8].hidden).toBe(false);
   });
 
   test('Columns not in selectedAccessors become hidden', () => {
     const selectedAccessors: string[] = [];
     const columns = useColumns(resourceFilter, selectedAccessors);
-    expect(columns).toHaveLength(7);
+    expect(columns).toHaveLength(9);
     expect(columns[0].accessor).toBe('id');
     expect(columns[0].hidden).toBe(true);
     expect(columns[1].accessor).toBe('type');
@@ -122,12 +147,16 @@ describe('useColumns', () => {
     expect(columns[2].hidden).toBe(true);
     expect(columns[3].accessor).toBe('state');
     expect(columns[3].hidden).toBe(true);
-    expect(columns[4].accessor).toBe('cxlSwitchId');
+    expect(columns[4].accessor).toBe('detected');
     expect(columns[4].hidden).toBe(true);
-    expect(columns[5].accessor).toBe('nodeIDs');
+    expect(columns[5].accessor).toBe('resourceGroups');
     expect(columns[5].hidden).toBe(true);
-    expect(columns[6].accessor).toBe('resourceAvailable');
+    expect(columns[6].accessor).toBe('cxlSwitchId');
     expect(columns[6].hidden).toBe(true);
+    expect(columns[7].accessor).toBe('nodeIDs');
+    expect(columns[7].hidden).toBe(true);
+    expect(columns[8].accessor).toBe('resourceAvailable');
+    expect(columns[8].hidden).toBe(true);
   });
 
   test('That the ID is rendered', async () => {
@@ -306,5 +335,48 @@ describe('useColumns', () => {
     // @ts-ignore
     MultiSelect.mock.lastCall[0].onChange('unavailable');
     expect(resourceFilter.setQuery.available).toHaveBeenCalledTimes(1);
+  });
+
+  test('That the detection status is rendered', async () => {
+    const columns = useColumns(resourceFilter, selectedAccessors);
+    const column = columns.find((column) => column.accessor === 'detected');
+    if (!column || !column.render) {
+      throw new Error('undefined');
+    }
+
+    // Test for detected=true
+    render(column.render({ ...dummyAPPResource[0], detected: true }, 0) as ReactElement);
+    expect(screen.getByText('Detected')).toBeInTheDocument();
+
+    // Test for detected=false
+    render(column.render({ ...dummyAPPResource[0], detected: false }, 0) as ReactElement);
+    expect(screen.getByText('Not Detected')).toBeInTheDocument();
+  });
+
+  test('The query is updated when the MultiSelect input for detection status is entered', async () => {
+    const columns = useColumns(resourceFilter, selectedAccessors);
+    const column = columns.find((column) => column.accessor === 'detected');
+    if (!column || column.filter === undefined) {
+      throw new Error('undefined');
+    }
+    render(column.filter as ReactElement);
+
+    // @ts-ignore
+    MultiSelect.mock.lastCall[0].onChange(['Detected']);
+    expect(resourceFilter.setQuery.detection).toHaveBeenCalledTimes(1);
+    expect(resourceFilter.setQuery.detection).toHaveBeenCalledWith(['Detected']);
+  });
+
+  test('That the resourceGroups is rendered', async () => {
+    const columns = useColumns(resourceFilter, selectedAccessors);
+    const column = columns.find((column) => column.accessor === 'resourceGroups');
+    if (!column || !column.render) {
+      throw new Error('undefined');
+    }
+    render(column.render(dummyAPPResource[0], 0) as ReactElement);
+    expect(PageLink).toHaveBeenCalledTimes(1);
+
+    render(column.render(dummyAPPResource[1], 0) as ReactElement);
+    expect(PageLink).toHaveBeenCalledTimes(2);
   });
 });

@@ -24,7 +24,7 @@ import { APIPromQL } from '@/shared-modules/types';
 import { useIdFromQuery } from '@/shared-modules/utils/hooks';
 import { fetcherForPromqlByPost } from '@/shared-modules/utils';
 
-import { ResourceListTable } from '@/components';
+import { ResourceListTable, useFormatResourceListTableData } from '@/components';
 import NodeDetail from '@/app/[lng]/node-detail/page';
 import { dummyNodeDetail } from '@/utils/dummy-data/node-detail/nodes';
 
@@ -188,10 +188,10 @@ jest.mock('@/shared-modules/utils/hooks', () => ({
   __esModule: true,
   ...jest.requireActual('@/shared-modules/utils/hooks'),
   useIdFromQuery: jest.fn(),
+  useMetricDateRange: jest.fn().mockReturnValue(['2025-05-01T00:00:00Z', '2025-05-02T00:00:00Z']),
 }));
 
 jest.mock('@/shared-modules/components/GraphView');
-jest.mock('@/components/ResourceListTable');
 
 jest.mock('@/shared-modules/components/PageHeader');
 
@@ -199,6 +199,16 @@ jest.mock('@/shared-modules/utils/fetcherForPromql', () => ({
   __esModule: true,
   ...jest.requireActual('@/shared-modules/utils/fetcherForPromql'),
   fetcherForPromqlByPost: jest.fn(),
+}));
+
+jest.mock('@/components/ResourceListTable', () => ({
+  ResourceListTable: jest.fn(() => <div>Resource List Table</div>),
+  useFormatResourceListTableData: jest.fn(() => ({
+    data: [],
+    rgError: undefined,
+    rgIsValidating: false,
+    rgMutate: jest.fn(),
+  })),
 }));
 
 describe('Node Detail', () => {
@@ -381,41 +391,75 @@ describe('Node Detail', () => {
     expect(layoutID).toHaveTextContent('');
   });
 
-  test('When the server returns an error, a message is displayed', async () => {
+  test('When the server returns errors, messages are displayed', async () => {
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       error: {
-        message: 'Error occurred',
+        message: 'Error occurred 1',
         response: {
           data: {
-            message: 'Error Message',
+            message: 'Error Message 1',
           },
         },
       },
       mutate: jest.fn(),
     }));
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: {
+        message: 'Error occurred 2',
+        response: {
+          data: {
+            message: 'Error Message 2',
+          },
+        },
+      },
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
     render(<NodeDetail />);
-    const alertDialog = screen.queryAllByRole('alert')[0];
-    const title = alertDialog?.querySelector('span') as HTMLSpanElement;
-    const message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    let alertDialog = screen.queryAllByRole('alert')[0];
+    let title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    let message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
     expect(alertDialog).toBeInTheDocument();
-    expect(title).toHaveTextContent('Error occurred');
-    expect(message).toHaveTextContent('Error Message');
+    expect(title).toHaveTextContent('Error occurred 1');
+    expect(message).toHaveTextContent('Error Message 1');
+    alertDialog = screen.queryAllByRole('alert')[2];
+    title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    expect(alertDialog).toBeInTheDocument();
+    expect(title).toHaveTextContent('Error occurred 2');
+    expect(message).toHaveTextContent('Error Message 2');
   });
 
-  test('When unable to connect to the server, a message is displayed', async () => {
+  test('When unable to connect to the server, messages are displayed', async () => {
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       error: {
-        message: 'Error occurred',
+        message: 'Error occurred 1',
         response: null,
       },
       mutate: jest.fn(),
     }));
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: {
+        message: 'Error occurred 2',
+        response: null,
+      },
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
     render(<NodeDetail />);
-    const alertDialog = screen.queryAllByRole('alert')[0];
-    const title = alertDialog?.querySelector('span') as HTMLSpanElement;
-    const message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    let alertDialog = screen.queryAllByRole('alert')[0];
+    let title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    let message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
     expect(alertDialog).toBeInTheDocument();
-    expect(title).toHaveTextContent('Error occurred');
+    expect(title).toHaveTextContent('Error occurred 1');
+    expect(message).toBeNull();
+    alertDialog = screen.queryAllByRole('alert')[2];
+    title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    expect(alertDialog).toBeInTheDocument();
+    expect(title).toHaveTextContent('Error occurred 2');
     expect(message).toBeNull();
   });
 
@@ -495,5 +539,104 @@ describe('Node Detail Resource Specifications', () => {
     expect(screen.getByText('Storage')).toBeInTheDocument();
     expect(screen.getByText('36.00')).toBeInTheDocument();
     expect(screen.getByText('TiB')).toBeInTheDocument();
+  });
+});
+
+describe('Node Detail with special metric date range cases', () => {
+  beforeEach(() => {
+    // Execute before each test
+    jest.clearAllMocks();
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      if (typeof key === 'string') {
+        data = resData;
+      }
+
+      return {
+        data: data || dummyGraphData,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+    (useIdFromQuery as jest.Mock).mockReturnValue('res10101');
+    (fetcherForPromqlByPost as jest.Mock).mockResolvedValue(dummyGraphData);
+  });
+
+  test('Renders properly with undefined metric date range', () => {
+    // Mock useMetricDateRange to return undefined values for complete code coverage
+    const { useMetricDateRange } = require('@/shared-modules/utils/hooks');
+    (useMetricDateRange as jest.Mock).mockReturnValue([undefined as unknown as string, undefined as unknown as string]);
+
+    render(<NodeDetail />);
+
+    // Verify the component renders without crashing
+    expect(screen.getByText('Node ID')).toBeInTheDocument();
+
+    // Verify that the GraphView components are called with appropriate props
+    const graphViewCalls = (GraphView as jest.Mock).mock.calls;
+    expect(graphViewCalls.length).toBeGreaterThan(0);
+
+    // Check that PageHeader was called with correct props
+    const pageHeaderCalls = (PageHeader as jest.Mock).mock.calls;
+    expect(pageHeaderCalls.length).toBe(1);
+    expect(pageHeaderCalls[0][0].pageTitle).toBe('Node Details');
+  });
+
+  test('Renders with invalid start date in metric date range', () => {
+    // Mock useMetricDateRange to simulate an invalid start date
+    const { useMetricDateRange } = require('@/shared-modules/utils/hooks');
+    (useMetricDateRange as jest.Mock).mockReturnValue(['Invalid Date', '2025-05-02T00:00:00Z']);
+
+    render(<NodeDetail />);
+
+    // Verify component renders correctly
+    expect(screen.getByText('Node ID')).toBeInTheDocument();
+  });
+
+  test('Renders with invalid end date in metric date range', () => {
+    // Mock useMetricDateRange to simulate an invalid end date
+    const { useMetricDateRange } = require('@/shared-modules/utils/hooks');
+    (useMetricDateRange as jest.Mock).mockReturnValue(['2025-05-01T00:00:00Z', 'Invalid Date']);
+
+    render(<NodeDetail />);
+
+    // Verify component renders correctly
+    expect(screen.getByText('Node ID')).toBeInTheDocument();
+  });
+
+  test('Renders with end date same as today in metric date range', () => {
+    // Mock useMetricDateRange to simulate end date being today
+    const today = new Date();
+    const todayIso = today.toISOString();
+    const { useMetricDateRange } = require('@/shared-modules/utils/hooks');
+    (useMetricDateRange as jest.Mock).mockReturnValue(['2025-05-01T00:00:00Z', todayIso]);
+
+    render(<NodeDetail />);
+
+    // Verify component renders correctly
+    expect(screen.getByText('Node ID')).toBeInTheDocument();
+  });
+
+  test('Renders with null metric date range', () => {
+    // Mock useMetricDateRange to return null values for complete code coverage
+    const { useMetricDateRange } = require('@/shared-modules/utils/hooks');
+    (useMetricDateRange as jest.Mock).mockReturnValue([null as unknown as string, null as unknown as string]);
+
+    render(<NodeDetail />);
+
+    // Verify the component renders without crashing
+    expect(screen.getByText('Node ID')).toBeInTheDocument();
+  });
+
+  test('Renders with undefined and null metric date range', () => {
+    // Mock useMetricDateRange to return undefined and null values for complete code coverage
+    const { useMetricDateRange } = require('@/shared-modules/utils/hooks');
+    (useMetricDateRange as jest.Mock).mockReturnValue([undefined as unknown as string, null as unknown as string]);
+
+    render(<NodeDetail />);
+
+    // Verify the component renders without crashing
+    expect(screen.getByText('Node ID')).toBeInTheDocument();
   });
 });

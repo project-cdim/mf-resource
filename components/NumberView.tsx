@@ -14,10 +14,10 @@
  * under the License.
  */
 
-import { Card, Text, Title } from '@mantine/core';
+import { Stack, Text, Title } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 
-import { PageLink } from '@/shared-modules/components';
+import { CardLoading, PageLink } from '@/shared-modules/components';
 import { ResourceListQuery } from '@/shared-modules/types';
 
 /**
@@ -34,6 +34,8 @@ export type NumberViewProps = {
   query?: ResourceListQuery;
   /** Link title */
   linkTitle?: string;
+  /** Loading state */
+  loading: boolean;
 };
 
 /**
@@ -42,16 +44,24 @@ export type NumberViewProps = {
  * @returns Number information JSX.Element
  */
 export const NumberView = (props: NumberViewProps) => {
+  return (
+    <CardLoading withBorder h={'100%'} loading={props.loading}>
+      <NumberViewInner {...props} />
+    </CardLoading>
+  );
+};
+
+export const NumberViewInner = (props: Exclude<NumberViewProps, 'loading'>) => {
   const t = useTranslations();
   return (
-    <PageLink
-      title={props.linkTitle || t('View details')}
-      path={props.link}
-      query={props.query}
-      color='rgb(55 65 81 / var(--tw-text-opacity))'
-    >
-      <Card withBorder>
-        <Title order={2} size='h4' fw={500}>
+    <Stack justify='flex-end' h={'100%'}>
+      <PageLink
+        title={props.linkTitle || t('View details')}
+        path={props.link}
+        query={props.query}
+        color='rgb(55 65 81 / var(--tw-text-opacity))'
+      >
+        <Title order={1} size='h4' fw={500}>
           {props.title}
         </Title>
         {props.number !== undefined ? (
@@ -64,7 +74,7 @@ export const NumberView = (props: NumberViewProps) => {
             &nbsp;
           </Text>
         )}
-      </Card>
-    </PageLink>
+      </PageLink>
+    </Stack>
   );
 };

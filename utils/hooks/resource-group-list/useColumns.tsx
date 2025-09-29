@@ -16,11 +16,23 @@
 
 import { DataTableColumn } from 'mantine-datatable';
 import { useTranslations } from 'next-intl';
-import { PageLink, TextInputForTableFilter, DateRangePicker, DatetimeString } from '@/shared-modules/components';
+import {
+  PageLink,
+  TextInputForTableFilter,
+  DateRangePicker,
+  DatetimeString,
+  LongSentences,
+} from '@/shared-modules/components';
 
 import { APPResourceGroup } from '@/types';
 
 import { ResourceGroupListFilter } from '@/utils/hooks/useResourceGroupListFilter';
+import { ActionIcon, Group } from '@mantine/core';
+import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { useColorStyles } from '@/shared-modules/styles/styles';
+import { usePermission } from '@/shared-modules/utils/hooks';
+import { MANAGE_RESOURCE } from '@/shared-modules/constant';
+import { useResourceGroupModal } from '@/components';
 
 /**
  * Constructs columns for the resource group list
@@ -31,10 +43,14 @@ import { ResourceGroupListFilter } from '@/utils/hooks/useResourceGroupListFilte
  */
 export const useColumns = (
   groupFilter: ResourceGroupListFilter,
-  selectedAccessors: (string | null)[]
+  selectedAccessors: (string | null)[],
+  openModal: ReturnType<typeof useResourceGroupModal>['openModal']
 ): DataTableColumn<APPResourceGroup>[] => {
+  const DEFAULT_GROUP_ID = '00000000-0000-7000-8000-000000000000';
   const t = useTranslations();
-
+  const { red, blue } = useColorStyles();
+  const hasPermission = usePermission(MANAGE_RESOURCE);
+  const isButtonDisabled = (id: string) => id === DEFAULT_GROUP_ID || !hasPermission;
   return [
     {
       accessor: 'name',
@@ -43,9 +59,12 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('name'),
       render: ({ id, name }) => {
         return (
-          <PageLink title={t('Resource Group Details')} path='/cdim/res-resource-group-detail' query={{ id }}>
-            {name}
-          </PageLink>
+          // <Group gap={5} wrap='nowrap'>
+          <Group wrap='nowrap'>
+            <PageLink title={t('Resource Group Details')} path='/cdim/res-resource-group-detail' query={{ id }}>
+              <LongSentences text={name} />
+            </PageLink>
+          </Group>
         );
       },
       filter: (
@@ -70,6 +89,7 @@ export const useColumns = (
         />
       ),
       filtering: groupFilter.query.description !== '',
+      render: ({ description }) => <LongSentences text={description} lines={3} />,
     },
     {
       accessor: 'id',
@@ -80,28 +100,58 @@ export const useColumns = (
         <TextInputForTableFilter label={t('ID')} value={groupFilter.query.id} setValue={groupFilter.setQuery.id} />
       ),
       filtering: groupFilter.query.id !== '',
+      noWrap: true,
     },
     {
       accessor: 'createdAt',
       title: t('Created'),
       sortable: true,
       hidden: !selectedAccessors.includes('createdAt'),
-      render: ({ createdAt }) => DatetimeString(createdAt),
+      render: ({ createdAt }) => <DatetimeString date={createdAt} />,
       filter: ({ close }) => (
         <DateRangePicker value={groupFilter.query.createdAt} setValue={groupFilter.setQuery.createdAt} close={close} />
       ),
       filtering: groupFilter.query.createdAt.some((date) => Boolean(date)),
+      noWrap: true,
     },
     {
       accessor: 'updatedAt',
       title: t('Updated'),
       sortable: true,
       hidden: !selectedAccessors.includes('updatedAt'),
-      render: ({ updatedAt }) => DatetimeString(updatedAt),
+      render: ({ updatedAt }) => <DatetimeString date={updatedAt} />,
       filter: ({ close }) => (
         <DateRangePicker value={groupFilter.query.updatedAt} setValue={groupFilter.setQuery.updatedAt} close={close} />
       ),
       filtering: groupFilter.query.updatedAt.some((date) => Boolean(date)),
+      noWrap: true,
+    },
+    {
+      accessor: 'actions',
+      title: '',
+      width: 80,
+      render: (rg) => (
+        <Group gap={10} justify='right' wrap='nowrap'>
+          <ActionIcon
+            variant='default'
+            bd={`1px solid ${isButtonDisabled(rg.id) ? undefined : blue.color}`}
+            disabled={isButtonDisabled(rg.id)}
+            title={t('Edit')}
+            onClick={() => openModal({ operation: 'edit', rg })}
+          >
+            <IconPencil size={20} color={isButtonDisabled(rg.id) ? undefined : blue.color} />
+          </ActionIcon>
+          <ActionIcon
+            variant='default'
+            bd={`1px solid ${isButtonDisabled(rg.id) ? undefined : red.color}`}
+            disabled={isButtonDisabled(rg.id)}
+            title={t('Delete')}
+            onClick={() => openModal({ operation: 'delete', rg })}
+          >
+            <IconTrash size={20} color={isButtonDisabled(rg.id) ? undefined : red.color} />
+          </ActionIcon>
+        </Group>
+      ),
     },
   ];
 };

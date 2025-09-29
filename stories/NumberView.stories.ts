@@ -38,6 +38,7 @@ export const Standard: Story = {
     title: 'Excluded',
     number: 10,
     link: './resource-list',
+    loading: false,
   },
 };
 
@@ -48,5 +49,6 @@ export const withQuery: Story = {
     number: 10,
     link: './resource-list',
     query: { health: ['Warning'], type: ['Accelerator'] },
+    loading: false,
   },
 };

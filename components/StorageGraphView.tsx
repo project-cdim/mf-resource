@@ -15,7 +15,6 @@
  */
 
 import {
-  Card,
   ColorSwatch,
   Divider,
   Group,
@@ -25,14 +24,16 @@ import {
   Title,
   Tooltip,
   useMantineTheme,
+  Box,
 } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 
-import { PageLink } from '@/shared-modules/components';
+import { CardLoading, PageLink } from '@/shared-modules/components';
 import { PERCENT } from '@/shared-modules/constant';
 import { ResourceListQuery } from '@/shared-modules/types';
 import { bytesToUnit } from '@/shared-modules/utils/bytesToUnit';
 import { formatUnitValue } from '@/shared-modules/utils/formatUnitValue';
+import { useLocaleDateString } from '@/shared-modules/utils/hooks';
 
 export type StorageGraphViewData = {
   /** Used capacity */
@@ -54,6 +55,10 @@ export type StorageGraphViewProps = {
   linkTitle?: string;
   /** Link destination query parameters */
   query?: ResourceListQuery;
+  /** Loading state */
+  loading: boolean;
+  /** Date string to display */
+  date?: string;
 };
 
 /**
@@ -63,10 +68,20 @@ export type StorageGraphViewProps = {
  * @returns Graph JSX.Element
  */
 export const StorageGraphView = (props: StorageGraphViewProps) => {
+  return (
+    <CardLoading withBorder h={'100%'} loading={props.loading}>
+      <StorageGraphViewInner {...props} />
+    </CardLoading>
+  );
+};
+
+// eslint-disable-next-line complexity
+export const StorageGraphViewInner = (props: Exclude<StorageGraphViewProps, 'loading'>) => {
   const t = useTranslations();
 
-  const { title, data, link, linkTitle, query } = props;
+  const { title, data, link, linkTitle, query, date } = props;
   const { used, allocated, overall } = data;
+  const formattedDate = useLocaleDateString(date ? new Date(date) : undefined);
   const theme = useMantineTheme();
   /** Perform calculations and add units */
   const calculateValues = (value: number | undefined, total: number | undefined) => {
@@ -87,46 +102,58 @@ export const StorageGraphView = (props: StorageGraphViewProps) => {
       : `${formatUnitValue('storage', overall, bytesToUnit(overall))} ${bytesToUnit(overall)}`;
 
   return (
-    <Card withBorder h='100%'>
-      <Stack justify='flex-end' h={'100%'}>
-        <PageLink
-          title={linkTitle || t('View details')}
-          path={link}
-          query={query}
-          color='rgb(55 65 81 / var(--tw-text-opacity))'
-        >
-          <Group mih='2.90625rem' align='flex-end'>
-            <Title order={3} size='h4'>
-              {title}
-            </Title>
-          </Group>
-        </PageLink>
-        <Divider />
-        <Progress.Root mt='lg' radius='xs' size={40}>
-          <Tooltip label={`${t('Used')} ${usedValues.bytes}`}>
-            <Progress.Section value={used && overall ? (used / overall) * PERCENT : 0} color='blue.6' />
-          </Tooltip>
+    <Stack justify='flex-end' h={'100%'}>
+      <PageLink
+        title={linkTitle || t('View details')}
+        path={link}
+        query={query}
+        color='rgb(55 65 81 / var(--tw-text-opacity))'
+      >
+        <Group justify='space-between' mih='2.90625rem' align='flex-end'>
+          <Title order={3} size='h4'>
+            {title}
+          </Title>
+          {date && (
+            <Box component='time' fz={12} pb={5}>
+              <time suppressHydrationWarning>{t('At "{date}"', { date: formattedDate })}</time>
+            </Box>
+          )}
+        </Group>
+      </PageLink>
+      <Divider />
+      <Progress.Root mt='lg' radius='xs' size={40}>
+        <Tooltip label={`${t('Used')} ${usedValues.bytes}`}>
+          <Progress.Section
+            value={
+              typeof used === 'number' && typeof overall === 'number' && overall !== 0 ? (used / overall) * PERCENT : 0
+            }
+            color='blue.6'
+          />
+        </Tooltip>
 
-          <Tooltip label={`${t('Allocated')} ${allocatedValues.bytes}`}>
-            <Progress.Section
-              value={overall && allocated ? ((allocated - (used ?? 0)) / overall) * PERCENT : 0}
-              color='gray.5'
-            />
-          </Tooltip>
-        </Progress.Root>
+        <Tooltip label={`${t('Allocated')} ${allocatedValues.bytes}`}>
+          <Progress.Section
+            value={
+              typeof overall === 'number' && overall !== 0 && typeof allocated === 'number'
+                ? ((allocated - (used ?? 0)) / overall) * PERCENT
+                : 0
+            }
+            color='gray.5'
+          />
+        </Tooltip>
+      </Progress.Root>
 
-        <Legend
-          legendItems={[
-            { color: theme.colors.blue[6], text: `${t('Used')} ${usedValues.percentage} (${usedValues.bytes})` },
-            {
-              color: theme.colors.gray[5],
-              text: `${t('Allocated')} ${allocatedValues.percentage} (${allocatedValues.bytes})`,
-            },
-            { color: theme.colors.gray[2], text: `${t('Total Capacity')} ${overallBytes}` },
-          ]}
-        />
-      </Stack>
-    </Card>
+      <Legend
+        legendItems={[
+          { color: theme.colors.blue[6], text: `${t('Used')} ${usedValues.percentage} (${usedValues.bytes})` },
+          {
+            color: theme.colors.gray[5],
+            text: `${t('Allocated')} ${allocatedValues.percentage} (${allocatedValues.bytes})`,
+          },
+          { color: theme.colors.gray[2], text: `${t('Total Capacity')} ${overallBytes}` },
+        ]}
+      />
+    </Stack>
   );
 };
 

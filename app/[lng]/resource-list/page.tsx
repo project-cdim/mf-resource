@@ -18,14 +18,11 @@
 
 import { Stack } from '@mantine/core';
 import { useTranslations } from 'next-intl';
-import useSWRImmutable from 'swr/immutable';
 
 import { MessageBox, PageHeader } from '@/shared-modules/components';
-import { APIresources } from '@/shared-modules/types';
-import { fetcher } from '@/shared-modules/utils';
 import { useLoading } from '@/shared-modules/utils/hooks';
 
-import { ResourceListTable } from '@/components';
+import { ResourceListTable, useResourceListTableData } from '@/components';
 
 /**
  * Resource List Page
@@ -35,21 +32,39 @@ import { ResourceListTable } from '@/components';
 const ResourceList = () => {
   const t = useTranslations();
 
-  const { data, error, isValidating, mutate } = useSWRImmutable<APIresources>(
-    `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources?detail=true`,
-    fetcher
-  );
+  const { data, errors, isValidating, mutate } = useResourceListTableData();
+
   const loading = useLoading(isValidating);
 
-  const selectedAccessors = ['id', 'type', 'health', 'state', 'cxlSwitchId', 'nodeIDs', 'resourceAvailable'];
+  const selectedAccessors = [
+    'id',
+    'type',
+    'health',
+    'state',
+    'detected',
+    'resourceGroups',
+    'cxlSwitchId',
+    'nodeIDs',
+    'resourceAvailable',
+  ];
 
   const items = [{ title: t('Resource Management') }, { title: t('Resources.list') }];
 
   return (
     <Stack gap='xl'>
       <PageHeader pageTitle={t('Resources.list')} items={items} mutate={mutate} loading={loading} />
-      {error && <MessageBox type='error' title={error.message} message={error.response?.data.message || ''} />}
-      <ResourceListTable selectedAccessors={selectedAccessors} data={data?.resources} loading={loading} />
+      {errors.map(
+        (error) =>
+          error && (
+            <MessageBox
+              key={error.message}
+              type='error'
+              title={error.message}
+              message={error.response?.data.message || ''}
+            />
+          )
+      )}
+      <ResourceListTable selectedAccessors={selectedAccessors} data={data} loading={loading} />
     </Stack>
   );
 };

@@ -34,33 +34,44 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const defaultDateRange: [Date, Date] = [new Date('2024-01-01'), new Date('2024-01-31')];
+const dummySetDateRange = () => {};
+
 const graphViewDummy: GraphGroupItem = {
   type: 'graphView',
   props: {
     title: 'graphView Title',
     valueFormatter: () => 'valueFormatter',
     data: chartData,
+    loading: false,
+    dateRange: defaultDateRange,
     /** URI for retrieving graph data */
     // uri: '',
   },
 };
 
 /** Three items */
+
 export const Standard: Story = {
   args: {
     /** Title */
     title: 'Title',
     /** Array of {@link GraphViewDummy} */
     items: [graphViewDummy, graphViewDummy, graphViewDummy],
+    dateRange: defaultDateRange,
+    setDateRange: dummySetDateRange,
   },
 };
 
 /** More than four items (maximum of 4 columns) */
+
 export const ManyItems: Story = {
   args: {
     /** Title */
     title: 'Title',
     /** Array of {@link GraphViewDummy} */
     items: [graphViewDummy, graphViewDummy, graphViewDummy, graphViewDummy, graphViewDummy, graphViewDummy],
+    dateRange: defaultDateRange,
+    setDateRange: dummySetDateRange,
   },
 };

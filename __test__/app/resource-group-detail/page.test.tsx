@@ -21,7 +21,7 @@ import { render } from '@/shared-modules/__test__/test-utils';
 import { PageHeader } from '@/shared-modules/components';
 import { useIdFromQuery } from '@/shared-modules/utils/hooks';
 
-import { ResourceListTable } from '@/components';
+import { ResourceListTable, useFormatResourceListTableData } from '@/components';
 
 import useSWRImmutable from 'swr/immutable';
 import { dummyAPIResourceGroup1 } from '@/utils/dummy-data/resource-group-list/dummyAPIResourceGroups';
@@ -38,7 +38,15 @@ jest.mock('@/shared-modules/utils/hooks', () => ({
 }));
 
 jest.mock('@/shared-modules/components/GraphView');
-jest.mock('@/components/ResourceListTable');
+jest.mock('@/components/ResourceListTable', () => ({
+  ResourceListTable: jest.fn(() => <div>Resource List Table</div>),
+  useFormatResourceListTableData: jest.fn(() => ({
+    data: [],
+    rgError: undefined,
+    rgIsValidating: false,
+    rgMutate: jest.fn(),
+  })),
+}));
 
 jest.mock('@/shared-modules/components/PageHeader');
 
@@ -141,38 +149,72 @@ describe('Resource Group Detail', () => {
   test('When the server returns an error, a message is displayed', async () => {
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       error: {
-        message: 'Error occurred',
+        message: 'Error occurred 1',
         response: {
           data: {
-            message: 'Error Message',
+            message: 'Error Message 1',
           },
         },
       },
       mutate: jest.fn(),
     }));
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: {
+        message: 'Error occurred 2',
+        response: {
+          data: {
+            message: 'Error Message 2',
+          },
+        },
+      },
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
     render(<ResourceGroupDetail />);
-    const alertDialog = screen.queryAllByRole('alert')[0];
-    const title = alertDialog?.querySelector('span') as HTMLSpanElement;
-    const message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    let alertDialog = screen.queryAllByRole('alert')[0];
+    let title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    let message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
     expect(alertDialog).toBeInTheDocument();
-    expect(title).toHaveTextContent('Error occurred');
-    expect(message).toHaveTextContent('Error Message');
+    expect(title).toHaveTextContent('Error occurred 1');
+    expect(message).toHaveTextContent('Error Message 1');
+    alertDialog = screen.queryAllByRole('alert')[1];
+    title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    expect(alertDialog).toBeInTheDocument();
+    expect(title).toHaveTextContent('Error occurred 2');
+    expect(message).toHaveTextContent('Error Message 2');
   });
 
   test('When unable to connect to the server, a message is displayed', async () => {
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       error: {
-        message: 'Error occurred',
+        message: 'Error occurred 1',
         response: null,
       },
       mutate: jest.fn(),
     }));
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: {
+        message: 'Error occurred 2',
+        response: null,
+      },
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
     render(<ResourceGroupDetail />);
-    const alertDialog = screen.queryAllByRole('alert')[0];
-    const title = alertDialog?.querySelector('span') as HTMLSpanElement;
-    const message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    let alertDialog = screen.queryAllByRole('alert')[0];
+    let title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    let message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
     expect(alertDialog).toBeInTheDocument();
-    expect(title).toHaveTextContent('Error occurred');
+    expect(title).toHaveTextContent('Error occurred 1');
+    expect(message).toBeNull();
+    alertDialog = screen.queryAllByRole('alert')[1];
+    title = alertDialog?.querySelector('span') as HTMLSpanElement;
+    message = alertDialog?.querySelector('span')?.parentNode?.nextSibling as HTMLDivElement;
+    expect(alertDialog).toBeInTheDocument();
+    expect(title).toHaveTextContent('Error occurred 2');
     expect(message).toBeNull();
   });
 });

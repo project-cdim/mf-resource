@@ -48,6 +48,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: true,
         },
         {
           annotation: {
@@ -63,6 +64,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: true,
         },
         {
           annotation: {
@@ -78,6 +80,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: false,
         },
       ],
     },
@@ -98,6 +101,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: true,
         },
         {
           annotation: {
@@ -113,6 +117,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: true,
         },
         {
           annotation: {
@@ -128,6 +133,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: true,
         },
         {
           annotation: {
@@ -143,6 +149,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: true,
         },
         {
           annotation: {
@@ -158,6 +165,7 @@ const resData: APInodes = {
             deviceSwitchInfo: 'CXL001',
           },
           resourceGroupIDs: [],
+          detected: false,
         },
       ],
     },

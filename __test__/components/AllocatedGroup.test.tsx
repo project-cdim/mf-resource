@@ -38,13 +38,16 @@ describe('AllocatedGroup Component', () => {
         {
           title: 'Item 1',
           device: {
+            type: 'networkInterface',
             allocated: 30,
             all: 120,
           },
+          loading: false,
         },
         {
           title: 'Item 2',
           device: {
+            type: 'CPU',
             allocated: 40,
             all: 140,
           },
@@ -53,6 +56,7 @@ describe('AllocatedGroup Component', () => {
             all: '520',
             unit: 'cores',
           },
+          loading: false,
         },
       ],
     };
@@ -62,8 +66,10 @@ describe('AllocatedGroup Component', () => {
     expect(screen.getByText('Group with Items')).toBeInTheDocument();
     expect(screen.getByText('Item 1')).toBeInTheDocument();
     expect(screen.getByText('Item 2')).toBeInTheDocument();
-    expect(screen.getByText('30 / 120')).toBeInTheDocument();
-    expect(screen.getByText('40 / 140')).toBeInTheDocument();
+    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getByText('/ 120')).toBeInTheDocument();
+    expect(screen.getByText('40')).toBeInTheDocument();
+    expect(screen.getByText('/ 140')).toBeInTheDocument();
     expect(screen.getByText('(190 / 520 cores)')).toBeInTheDocument();
   });
 });

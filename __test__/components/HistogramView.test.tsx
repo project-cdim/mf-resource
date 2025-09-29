@@ -43,6 +43,7 @@ describe('HistogramView', () => {
       title: 'Usage rate',
       data: singleData,
       valueFormatter: formatNumberOfResources,
+      loading: false,
     };
     render(<HistogramView {...props} />);
     const title = screen.getByRole('heading', { level: 3 });
@@ -55,6 +56,7 @@ describe('HistogramView', () => {
       data: singleData,
       valueFormatter: formatNumberOfResources,
       stack: false,
+      loading: false,
     };
     render(<HistogramView {...props} />);
     // @ts-ignore
@@ -76,6 +78,7 @@ describe('HistogramView', () => {
       data: stackData,
       valueFormatter: formatNumberOfResources,
       stack: true,
+      loading: false,
     };
     render(<HistogramView {...props} />);
     // @ts-ignore
@@ -103,6 +106,7 @@ describe('HistogramView', () => {
       title: 'string',
       data: singleData,
       valueFormatter: formatNumberOfResources,
+      loading: false,
     };
     render(<HistogramView {...props} />);
     // @ts-ignore
@@ -119,6 +123,7 @@ describe('HistogramView', () => {
         title: 'Usage rate',
         data: data,
         valueFormatter: formatNumberOfResources,
+        loading: false,
       };
       render(<HistogramView {...props} />);
       expect(BarChart).not.toHaveBeenCalled();

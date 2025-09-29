@@ -43,6 +43,7 @@ export const Standard: Story = {
       /** Overall capacity */
       overall: 100 * 1024 ** 4,
     },
+    loading: false,
   },
 };
 export const AllZero: Story = {
@@ -57,6 +58,7 @@ export const AllZero: Story = {
       /** Overall capacity */
       overall: 0,
     },
+    loading: false,
   },
 };
 export const UsedZero = {
@@ -71,6 +73,7 @@ export const UsedZero = {
       /** Overall capacity */
       overall: 100 * 1024 ** 4,
     },
+    loading: false,
   },
 };
 export const AllocatedZero: Story = {
@@ -85,6 +88,7 @@ export const AllocatedZero: Story = {
       /** Overall capacity */
       overall: 100 * 1024 ** 4,
     },
+    loading: false,
   },
 };
 export const OverallZero: Story = {
@@ -99,6 +103,7 @@ export const OverallZero: Story = {
       /** Overall capacity */
       overall: 0,
     },
+    loading: false,
   },
 };
 export const AllUndefined: Story = {
@@ -113,6 +118,7 @@ export const AllUndefined: Story = {
       /** Overall capacity */
       overall: undefined,
     },
+    loading: false,
   },
 };
 export const UsedUndefined: Story = {
@@ -127,6 +133,7 @@ export const UsedUndefined: Story = {
       /** Overall capacity */
       overall: 100 * 1024 ** 4,
     },
+    loading: false,
   },
 };
 export const AllocatedUndefined: Story = {
@@ -141,6 +148,7 @@ export const AllocatedUndefined: Story = {
       /** Overall capacity */
       overall: 100 * 1024 ** 4,
     },
+    loading: false,
   },
 };
 export const OverallUndefined: Story = {
@@ -155,5 +163,6 @@ export const OverallUndefined: Story = {
       /** Overall capacity */
       overall: undefined,
     },
+    loading: false,
   },
 };

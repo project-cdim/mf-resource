@@ -14,9 +14,12 @@
  * under the License.
  */
 
-import { Card, Progress, Text, Title } from '@mantine/core';
+import { Group, Progress, Stack, Text, Title } from '@mantine/core';
 
 import { PERCENT } from '@/shared-modules/constant';
+import { CardLoading, PageLink } from '@/shared-modules/components';
+import { useTranslations } from 'next-intl';
+import { APIDeviceType } from '@/shared-modules/types';
 
 /**
  * For AllocatedView.item
@@ -27,6 +30,7 @@ export type AllocatedViewProps = {
   item:
     | {
         device: {
+          type: APIDeviceType | 'summary';
           /** Allocated resource count */
           allocated: number;
           /** Total resource count */
@@ -42,6 +46,8 @@ export type AllocatedViewProps = {
         };
       }
     | undefined;
+  /** Loading state */
+  loading: boolean;
 };
 
 /**
@@ -50,28 +56,64 @@ export type AllocatedViewProps = {
  * @returns JSX.Element displaying the number of allocated resources in a node configuration
  */
 export const AllocatedView = (props: AllocatedViewProps) => {
-  const { device, volume } = props.item ?? {};
   return (
-    <Card withBorder display='block'>
-      <Title size='h4' fw={500}>
-        {props.title}
-      </Title>
+    <CardLoading withBorder h={'100%'} loading={props.loading}>
+      <AllocatedViewInner {...props} />
+    </CardLoading>
+  );
+};
+
+export const AllocatedViewInner = (props: Exclude<AllocatedViewProps, 'loading'>) => {
+  const { device, volume } = props.item ?? {};
+  const t = useTranslations();
+
+  const query: { allocatednode: string[]; type?: string[] } = {
+    allocatednode: ['Allocated'],
+  };
+  if (device && device?.type !== 'summary') {
+    query.type = [device.type];
+  }
+  return (
+    <Stack justify='flex-end' h={'100%'} gap={5}>
+      <PageLink
+        title={t('Resources.list')}
+        path='/cdim/res-resource-list'
+        query={query}
+        color='rgb(55 65 81 / var(--tw-text-opacity))'
+        display='block'
+      >
+        <Title size='h4' fw={500}>
+          {props.title}
+        </Title>
+      </PageLink>
       {device && (
         <>
           <Progress value={(device.allocated / device.all) * PERCENT} size='xl' mt='xs' />
-          <Text fz='xl' fw={500} span>
+          <Group align='baseline' gap={'0.5em'} wrap='nowrap'>
             {/* ex. 25 / 100 Devices */}
-            {`${device.allocated} / ${device.all} Devices`}
-          </Text>
+            <PageLink
+              title={t('Resources.list')}
+              path='/cdim/res-resource-list'
+              query={query}
+              color='rgb(55 65 81 / var(--tw-text-opacity))'
+              display='block'
+            >
+              <Text fz='xl' fw={500} lh={1}>
+                {device.allocated}
+              </Text>
+            </PageLink>
+            <Text fz='xl' fw={500} lh={1}>
+              {`/ ${device.all} Devices`}
+            </Text>
+            {volume && (
+              <Text fz='xl' fw={500} span>
+                {/* ex. (180 / 500 cores) */}
+                {`(${volume.allocated} / ${volume.all} ${volume.unit})`}
+              </Text>
+            )}
+          </Group>
         </>
       )}
-
-      {volume && (
-        <Text fz='xl' fw={500} pl='0.5em' span>
-          {/* ex. (180 / 500 cores) */}
-          {`(${volume.allocated} / ${volume.all} ${volume.unit})`}
-        </Text>
-      )}
-    </Card>
+    </Stack>
   );
 };

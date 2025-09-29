@@ -16,17 +16,16 @@
 
 'use client';
 
-import { Stack, Text, Title } from '@mantine/core';
+import { Stack, Text, Title, Textarea } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 import useSWRImmutable from 'swr/immutable';
 
 import { CardLoading, DatetimeString, HorizontalTable, MessageBox, PageHeader } from '@/shared-modules/components';
-import { APIresource } from '@/shared-modules/types';
 import { fetcher } from '@/shared-modules/utils';
 import { useIdFromQuery, useLoading } from '@/shared-modules/utils/hooks';
 
-import { ResourceListTable } from '@/components';
-import { APIResourceGroup } from '@/types';
+import { ResourceListTable, useFormatResourceListTableData } from '@/components';
+import { APIResourceGroup, APPResource } from '@/types';
 
 /**
  * Resource Group Detail Page
@@ -46,14 +45,24 @@ const ResourceGroupDetail = () => {
     fetcher
   );
 
+  const { formattedData, rgError, rgIsValidating, rgMutate } = useFormatResourceListTableData(data?.resources);
+
   const loading = useLoading(isValidating || mswInitializing);
 
   const tableData = getTableData(t, data);
   return (
     <>
       <Stack gap='xl'>
-        <PageHeader pageTitle={t('Resource Group Details')} items={items} mutate={mutate} loading={loading} />
-        {error && <MessageBox type='error' title={error.message} message={error.response?.data.message || ''} />}
+        <PageHeader
+          pageTitle={t('Resource Group Details')}
+          items={items}
+          mutate={() => {
+            mutate();
+            rgMutate();
+          }}
+          loading={loading || rgIsValidating}
+        />
+        <Message error={error} rgError={rgError} />
         <CardLoading withBorder maw={'32em'} loading={loading}>
           <Text fz='sm'>{t('Name')}</Text>
           <Text fz='lg' fw={500}>
@@ -61,8 +70,21 @@ const ResourceGroupDetail = () => {
           </Text>
         </CardLoading>
         <HorizontalTable tableData={tableData} loading={loading} />
-        <ResourceList resources={data?.resources as APIresource[]} loading={loading} />
+        <ResourceList resources={formattedData} loading={loading || rgIsValidating} />
       </Stack>
+    </>
+  );
+};
+
+const Message = (props: { error: any; rgError: any }) => {
+  return (
+    <>
+      {props.error && (
+        <MessageBox type='error' title={props.error.message} message={props.error.response?.data.message || ''} />
+      )}
+      {props.rgError && (
+        <MessageBox type='error' title={props.rgError.message} message={props.rgError.response?.data.message || ''} />
+      )}
     </>
   );
 };
@@ -74,16 +96,29 @@ const getItems = (t: any, groupId: string) => [
 ];
 
 const getTableData = (t: any, data: APIResourceGroup | undefined) => [
-  { columnName: t('Description'), value: data?.description },
+  {
+    columnName: t('Description'),
+    value: <Textarea value={data?.description || ''} readOnly autosize maxRows={5} variant='unstyled' />,
+  },
   { columnName: t('ID'), value: data?.id },
-  { columnName: t('Created'), value: DatetimeString(data && new Date(data.createdAt)) },
-  { columnName: t('Updated'), value: DatetimeString(data && new Date(data.updatedAt)) },
+  { columnName: t('Created'), value: <DatetimeString date={data && new Date(data.createdAt)} /> },
+  { columnName: t('Updated'), value: <DatetimeString date={data && new Date(data.updatedAt)} /> },
 ];
 
-const ResourceList = (props: { resources: APIresource[]; loading: boolean }) => {
+const ResourceList = (props: { resources: APPResource[]; loading: boolean }) => {
   const t = useTranslations();
 
-  const selectedAccessors = ['id', 'type', 'health', 'state', 'cxlSwitchId', 'nodeIDs', 'resourceAvailable'];
+  const selectedAccessors = [
+    'id',
+    'type',
+    'health',
+    'state',
+    'detected',
+    'cxlSwitchId',
+    'nodeIDs',
+    'resourceAvailable',
+  ];
+
   return (
     <Stack>
       <Title order={2} fz='lg'>

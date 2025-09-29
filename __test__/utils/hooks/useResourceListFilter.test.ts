@@ -16,46 +16,39 @@
 
 import { act, renderHook } from '@testing-library/react';
 
-import { useQuery } from '@/shared-modules/utils/hooks';
+import { useQueryArrayObject } from '@/shared-modules/utils/hooks';
 
 import { dummyAPPResource } from '@/utils/dummy-data/resource-list/dummyAPPResource';
 import { useResourceListFilter } from '@/utils/hooks/useResourceListFilter';
+import { mockQuery } from '@/shared-modules/__test__/test-utils';
 
 jest.mock('@/shared-modules/utils/hooks', () => ({
   ...jest.requireActual('@/shared-modules/utils/hooks'),
-  useQuery: jest.fn(),
-}));
-
-jest.mock('next/router', () => ({
-  ...jest.requireActual('next/router'),
-  useRouter: jest.fn().mockReturnValue({ query: {}, isReady: true }),
+  useQueryArrayObject: jest.fn(),
 }));
 
 describe('useResourceListFilter', () => {
   beforeEach(() => {
     // @ts-ignore
-    useQuery.mockReset();
+    useQueryArrayObject.mockReset();
   });
 
   test('When allocatedNodesQuery only contains Unallocated, only unallocated resources are returned for the node', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ allocatednode: ['Unallocated'] });
+    mockQuery('allocatednode', ['Unallocated']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     const filteredRecords = result.current.filteredRecords;
     expect(filteredRecords).toHaveLength(1);
   });
 
   test('When allocatedNodesQuery only contains Allocated, only unallocated resources are returned for the node', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ allocatednode: ['Allocated'] });
+    mockQuery('allocatednode', ['Allocated']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     const filteredRecords = result.current.filteredRecords;
     expect(filteredRecords).toHaveLength(11);
   });
 
   test('When allocatedCxlQuery only contains Unallocated, only unallocated resources are returned for the node', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ allocatedCxl: ['Unallocated'] });
+    mockQuery('allocatedCxl', ['Unallocated']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     const filteredRecords = result.current.filteredRecords;
 
@@ -63,8 +56,7 @@ describe('useResourceListFilter', () => {
   });
 
   test('When allocatedCxlQuery only contains Allocated, only unallocated resources are returned for the node', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ allocatedCxl: ['Allocated'] });
+    mockQuery('allocatedCxl', ['Allocated']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     const filteredRecords = result.current.filteredRecords;
 
@@ -72,8 +64,7 @@ describe('useResourceListFilter', () => {
   });
 
   test('That only resources matching the specified query (cxlSwitchId) are returned', async () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ cxlSwitchId: ['cxl001'] });
+    mockQuery('cxlSwitchId', ['cxl001']);
     jest.useFakeTimers();
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     act(() => {
@@ -86,49 +77,44 @@ describe('useResourceListFilter', () => {
   test.each([
     [['memory'], 1],
     [['', 'memory', 'networkInterface'], 2],
-    ['memory', 1],
-    [',memory,networkInterface', 2],
-    [', memory,   networkInterface, ', 2],
+    [['memory'], 1],
+    [['memory', 'networkInterface'], 2],
+    [['memory', 'networkInterface'], 2],
   ])('That only resources matching the specified query (type) are returned: %s', (query, expected) => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ type: query });
+    mockQuery('type', query);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
 
     expect(result.current.filteredRecords).toHaveLength(expected);
   });
 
   test('That only resources matching the specified query (allocatednode) are returned', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ allocatednode: ['Unallocated'] });
+    mockQuery('allocatednode', ['Unallocated']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
 
     expect(result.current.filteredRecords).toHaveLength(1);
   });
 
   test('That only resources matching the specified query (state) are returned', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ state: ['Disabled'] });
+    mockQuery('state', ['Disabled']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
 
     expect(result.current.filteredRecords).toHaveLength(1);
   });
   test('That only resources matching the specified query (health) are returned', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ health: ['Warning'] });
+    mockQuery('health', ['Warning']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
 
     expect(result.current.filteredRecords).toHaveLength(2);
   });
   test('That only resources matching the specified query (resourceAvailable) are returned', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ resourceAvailable: ['Unavailable'] });
+    mockQuery('resourceAvailable', ['Unavailable']);
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
 
     expect(result.current.filteredRecords).toHaveLength(1);
   });
-  test('That only resources matching the specified query (nodeId) are returned', () => {
-    // @ts-ignore
-    useQuery.mockReturnValue({ nodeId: ['node002'] });
+
+  test('That only resources matching the specified query (resourceGroup) are returned', () => {
+    mockQuery('resourceGroup', ['default']);
     jest.useFakeTimers();
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     act(() => {
@@ -137,9 +123,55 @@ describe('useResourceListFilter', () => {
     expect(result.current.filteredRecords).toHaveLength(11);
     jest.useRealTimers();
   });
+
+  test('That only resources matching the specified query (nodeId) are returned', () => {
+    mockQuery('nodeId', ['node002']);
+    jest.useFakeTimers();
+    const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
+    act(() => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(result.current.filteredRecords).toHaveLength(11);
+    jest.useRealTimers();
+  });
+
+  test('That only resources with detected=true are returned when detection=["Detected"]', () => {
+    mockQuery('detection', ['Detected']);
+    const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
+    // Count resources with detected=true in dummyAPPResource
+    const expectedCount = dummyAPPResource.filter((resource) => resource.detected).length;
+    expect(result.current.filteredRecords).toHaveLength(expectedCount);
+    // Verify each returned record has detected=true
+    result.current.filteredRecords.forEach((record) => {
+      expect(record.detected).toBe(true);
+    });
+  });
+
+  test('That only resources with detected=false are returned when detection=["Not Detected"]', () => {
+    mockQuery('detection', ['Not Detected']);
+    const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
+    // Count resources with detected=false in dummyAPPResource
+    const expectedCount = dummyAPPResource.filter((resource) => !resource.detected).length;
+    expect(result.current.filteredRecords).toHaveLength(expectedCount);
+    // Verify each returned record has detected=false
+    result.current.filteredRecords.forEach((record) => {
+      expect(record.detected).toBe(false);
+    });
+  });
+
+  test('That all resources are returned when both detection states are selected', () => {
+    mockQuery('detection', ['Detected', 'Not Detected']);
+    const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
+    expect(result.current.filteredRecords).toHaveLength(dummyAPPResource.length);
+  });
+
   test('When url contains no queries, all items are returned', () => {
     // @ts-ignore
-    useQuery.mockReturnValue({});
+    useQueryArrayObject.mockReturnValue(
+      new Proxy({} as Record<string, string[]>, {
+        get: () => [],
+      })
+    );
     const { result } = renderHook(() => useResourceListFilter(dummyAPPResource));
     const filteredRecords = result.current.filteredRecords;
     expect(filteredRecords).toHaveLength(12);

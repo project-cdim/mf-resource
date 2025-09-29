@@ -23,36 +23,40 @@ import { useTranslations } from 'next-intl';
 import { availableOrder, healthOrder, stateOrder } from '@/shared-modules/constant';
 import {
   APIDeviceAvailable,
+  APIDeviceDetection,
   APIDeviceHealth,
   APIDeviceState,
   APIDeviceType,
-  ResourceListQuery,
 } from '@/shared-modules/types';
-import { sortByDeviceType, isAllStringIncluded, isSelected } from '@/shared-modules/utils';
-import { useQuery } from '@/shared-modules/utils/hooks';
+import { isAllStringIncluded, isSelected, sortByDeviceType } from '@/shared-modules/utils';
+import { useQueryArrayObject } from '@/shared-modules/utils/hooks';
 import { APPResource } from '@/types';
 
 type APPResourceQuery = {
   id: string;
   types: APIDeviceType[];
-  states: APIDeviceState[];
   healths: APIDeviceHealth[];
-  available: APIDeviceAvailable[];
-  nodeIDs: string;
+  states: APIDeviceState[];
+  detection: APIDeviceDetection[];
+  resourceGroups: string;
   cxlSwitchId: string;
-  allocatedNodes: string[];
   allocatedCxl: string[];
+  nodeIDs: string;
+  allocatedNodes: string[];
+  available: APIDeviceAvailable[];
 };
 type APPResourceSetQuery = {
   id: Dispatch<SetStateAction<string>>;
   types: Dispatch<SetStateAction<APIDeviceType[]>>;
-  states: Dispatch<SetStateAction<APIDeviceState[]>>;
   healths: Dispatch<SetStateAction<APIDeviceHealth[]>>;
-  available: Dispatch<SetStateAction<APIDeviceAvailable[]>>;
-  nodeIDs: Dispatch<SetStateAction<string>>;
+  states: Dispatch<SetStateAction<APIDeviceState[]>>;
+  detection: Dispatch<SetStateAction<APIDeviceDetection[]>>;
+  resourceGroups: Dispatch<SetStateAction<string>>;
   cxlSwitchId: Dispatch<SetStateAction<string>>;
-  allocatedNodes: Dispatch<SetStateAction<string[]>>;
   allocatedCxl: Dispatch<SetStateAction<string[]>>;
+  nodeIDs: Dispatch<SetStateAction<string>>;
+  allocatedNodes: Dispatch<SetStateAction<string[]>>;
+  available: Dispatch<SetStateAction<APIDeviceAvailable[]>>;
 };
 export type ResourceListFilter = {
   /** Filtered records */
@@ -63,9 +67,10 @@ export type ResourceListFilter = {
   setQuery: APPResourceSetQuery;
   /** MultiSelect options */
   selectOptions: {
-    type: { value: APIDeviceType; label: string }[];
-    state: APIDeviceState[];
+    type: { value: string; label: string }[];
     health: APIDeviceHealth[];
+    state: APIDeviceState[];
+    detection: { value: APIDeviceDetection; label: string }[];
     available: { value: APIDeviceAvailable; label: string }[];
     allocate: { value: string; label: string }[];
   };
@@ -79,12 +84,14 @@ export type ResourceListFilter = {
  */
 export const useResourceListFilter = (records: APPResource[]): ResourceListFilter => {
   const t = useTranslations();
-  const queryObject = useResourceQuery();
   const [idQuery, setIdQuery] = useState('');
   const [debouncedIdQuery] = useDebouncedValue(idQuery, 200);
   const [typeQuery, setTypeQuery] = useState<APIDeviceType[]>([]);
-  const [stateQuery, setStateQuery] = useState<APIDeviceState[]>([]);
   const [healthQuery, setHealthQuery] = useState<APIDeviceHealth[]>([]);
+  const [stateQuery, setStateQuery] = useState<APIDeviceState[]>([]);
+  const [detectionQuery, setDetectionQuery] = useState<APIDeviceDetection[]>([]);
+  const [resourceGroupsQuery, setResourceGroupsQuery] = useState('');
+  const [debouncedResourceGroupsQuery] = useDebouncedValue(resourceGroupsQuery, 200);
   const [availableQuery, setAvailableQuery] = useState<APIDeviceAvailable[]>([]);
   const [allocatedNodesQuery, setAllocatedNodesQuery] = useState<string[]>([]);
   const [nodeIDsQuery, setNodeIDsQuery] = useState('');
@@ -92,38 +99,39 @@ export const useResourceListFilter = (records: APPResource[]): ResourceListFilte
   const [allocatedCxlQuery, setAllocatedCxlquery] = useState<string[]>([]);
   const [cxlSwitchIdQuery, setCxlSwitchIdQuery] = useState('');
   const [debouncedCxlSwitchIdQuery] = useDebouncedValue(cxlSwitchIdQuery, 200);
-  // MultiSelect options
-  const deviceTypeInRecords = records.map((record) => record.type);
-  const typeOptions = sortByDeviceType(deviceTypeInRecords).map((type) => ({
+
+  const queryObject = useQueryArrayObject();
+
+  useEffect(() => {
+    setTypeQuery(queryObject.type as APIDeviceType[]);
+    setHealthQuery(queryObject.health as APIDeviceHealth[]);
+    setStateQuery(queryObject.state as APIDeviceState[]);
+    setDetectionQuery(queryObject.detection as APIDeviceDetection[]);
+    setResourceGroupsQuery(queryObject.resourceGroup.join(' ') || '');
+    setNodeIDsQuery(queryObject.nodeId.join(' ') || '');
+    setAllocatedNodesQuery(queryObject.allocatednode);
+    setCxlSwitchIdQuery(queryObject.cxlSwitchId.join(' ') || '');
+    setAllocatedCxlquery(queryObject.allocatedCxl);
+    setAvailableQuery(queryObject.resourceAvailable as APIDeviceAvailable[]);
+  }, [queryObject]);
+
+  const typeOptions = sortByDeviceType(records.map((record) => record.type)).map((type) => ({
     value: type,
     label: _.upperFirst(type),
   }));
 
-  /** Update luigi's query asynchronously using useEffect */
-  useEffect(() => {
-    setTypeQuery(queryObject.type);
-    setHealthQuery(queryObject.health);
-    setStateQuery(queryObject.state);
-    setCxlSwitchIdQuery(queryObject.cxlSwitchId?.join(' ') || '');
-    setAllocatedCxlquery(queryObject.allocatedCxl);
-    setNodeIDsQuery(queryObject.nodeId?.join(' ') || '');
-    setAllocatedNodesQuery(queryObject.allocatednode);
-    setAvailableQuery(queryObject.resourceAvailable);
-  }, [queryObject]);
-
-  const stateInRecords = Array.from(new Set(records.map((record) => record.state)));
-  const stateOptions = stateOrder.filter((item: APIDeviceState) => stateInRecords.includes(item));
-  const healthInRecords = Array.from(new Set(records.map((record) => record.health)));
-  const healthOptions = healthOrder.filter((item: APIDeviceHealth) => healthInRecords.includes(item));
-  const availableInRecords = Array.from(new Set(records.map((record) => record.resourceAvailable)));
-  const availableOptions = availableOrder
-    .filter((item: APIDeviceAvailable) => availableInRecords.includes(item))
-    .map((item) => {
-      return { value: item, label: item === 'Available' ? t('Included') : t('Excluded') };
-    });
-  const allocateOptions = [
+  const stateOptions = [...stateOrder];
+  const healthOptions = [...healthOrder];
+  const availableOptions = availableOrder.map((item) => {
+    return { value: item, label: item === 'Available' ? t('Included') : t('Excluded') };
+  });
+  const allocateOptions: { value: string; label: string }[] = [
     { value: 'Unallocated', label: t('Unallocated') },
     { value: 'Allocated', label: t('Allocated') },
+  ];
+  const detectionOptions: { value: APIDeviceDetection; label: string }[] = [
+    { value: 'Detected', label: t('Detected') },
+    { value: 'Not Detected', label: t('Not Detected') },
   ];
 
   const filteredRecords = useMemo(() => {
@@ -131,23 +139,28 @@ export const useResourceListFilter = (records: APPResource[]): ResourceListFilte
       (record) =>
         isAllStringIncluded(record.id, debouncedIdQuery) &&
         isSelected(record.type, typeQuery) &&
-        isSelected(record.state, stateQuery) &&
         isSelected(record.health, healthQuery) &&
-        isSelected(record.resourceAvailable, availableQuery) &&
+        isSelected(record.state, stateQuery) &&
+        isSelected(record.detected ? 'Detected' : 'Not Detected', detectionQuery) &&
+        // Records of a resource group column are filtered by display value. For example if a record displays IDs, a record is filtered by IDs.
+        filterResourceGroups(record.resourceGroups, debouncedResourceGroupsQuery) &&
+        filterCxlSwitchIds(record.cxlSwitchId, allocatedCxlQuery, debouncedCxlSwitchIdQuery) &&
         filterNodeIds(record.nodeIDs, allocatedNodesQuery, debouncedNodeIDsQuery) &&
-        filterCxlSwitchIds(record.cxlSwitchId, allocatedCxlQuery, debouncedCxlSwitchIdQuery)
+        isSelected(record.resourceAvailable, availableQuery)
     );
   }, [
     records,
     debouncedIdQuery,
     typeQuery,
-    stateQuery,
     healthQuery,
-    availableQuery,
-    debouncedNodeIDsQuery,
+    stateQuery,
+    detectionQuery,
+    debouncedResourceGroupsQuery,
     debouncedCxlSwitchIdQuery,
-    allocatedNodesQuery,
     allocatedCxlQuery,
+    debouncedNodeIDsQuery,
+    allocatedNodesQuery,
+    availableQuery,
   ]);
 
   return {
@@ -155,69 +168,45 @@ export const useResourceListFilter = (records: APPResource[]): ResourceListFilte
     query: {
       id: idQuery,
       types: typeQuery,
-      states: stateQuery,
       healths: healthQuery,
-      available: availableQuery,
+      states: stateQuery,
+      detection: detectionQuery,
+      resourceGroups: resourceGroupsQuery,
       nodeIDs: nodeIDsQuery,
       cxlSwitchId: cxlSwitchIdQuery,
       allocatedNodes: allocatedNodesQuery,
       allocatedCxl: allocatedCxlQuery,
+      available: availableQuery,
     },
     setQuery: {
       id: setIdQuery,
       types: setTypeQuery,
-      states: setStateQuery,
       healths: setHealthQuery,
-      available: setAvailableQuery,
+      states: setStateQuery,
+      detection: setDetectionQuery,
+      resourceGroups: setResourceGroupsQuery,
       nodeIDs: setNodeIDsQuery,
       cxlSwitchId: setCxlSwitchIdQuery,
       allocatedNodes: setAllocatedNodesQuery,
       allocatedCxl: setAllocatedCxlquery,
+      available: setAvailableQuery,
     },
     selectOptions: {
       type: typeOptions,
-      state: stateOptions,
       health: healthOptions,
-      available: availableOptions,
+      state: stateOptions,
+      detection: detectionOptions,
       allocate: allocateOptions,
+      available: availableOptions,
     },
   };
 };
 
-const useResourceQuery = (): Required<ResourceListQuery> => {
-  const query = useQuery();
-  return useMemo(
-    () => ({
-      // Store as an array (empty array if undefined)
-      type: query.type ? [splitAndFlatQueryString(query.type) as APIDeviceType[]].flat(2) : [],
-      health: [(query.health as APIDeviceHealth | APIDeviceHealth[] | undefined) || []].flat(2),
-      state: [(query.state as APIDeviceState | APIDeviceState[] | undefined) || []].flat(2),
-      cxlSwitchId: [query.cxlSwitchId || []].flat(2),
-      allocatedCxl: [query.allocatedCxl || []].flat(2),
-      nodeId: [query.nodeId || []].flat(2),
-      allocatednode: [query.allocatednode || []].flat(2),
-      resourceAvailable: [(query.resourceAvailable as APIDeviceAvailable) || []].flat(2),
-    }),
-    [query]
+const filterResourceGroups = (resourceGroups: { name: string; id: string }[], debouncedResourceGroupsQuery: string) => {
+  return (
+    debouncedResourceGroupsQuery.trim() === '' ||
+    resourceGroups.some(({ name, id }) => isAllStringIncluded(name !== '' ? name : id, debouncedResourceGroupsQuery))
   );
-};
-
-/**
- * Splits a string or an array of strings with ',', filters empty string and flattens the result.
- *
- * @param q - The string or array of strings to split and flatten.
- * @returns An array of strings after splitting and flattening the input.
- */
-const splitAndFlatQueryString = (q: string | string[]): string[] => {
-  if (Array.isArray(q)) return q.map(splitString).flat();
-
-  return splitString(q);
-};
-
-const splitString = (s: string): string[] => {
-  // regex to split by comma and remove empty strings in longest match
-  const separator = /,\s*/;
-  return s.split(separator).filter((item) => item !== '');
 };
 
 const filterNodeIds = (nodeIds: string[], allocatedNodesQuery: string[], debouncedNodeIDsQuery: string): boolean => {

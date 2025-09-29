@@ -40,6 +40,7 @@ const resourcesOrg: APIresource = {
     // driveCapacityBytes: 4 * 1024 * 1024 * 1024 * 1024, // 4 TiB
   },
   resourceGroupIDs: [],
+  detected: true,
   nodeIDs: ['node01'],
 };
 
