@@ -60,7 +60,7 @@ describe('useSummarySingleGraph', () => {
     const deviceTypes: APIDeviceType[] = [];
     const metricEndDate = '2025-06-10T00:00:00Z';
     renderHook(() => useSummarySingleGraph(deviceTypes, metricEndDate));
-    // useSWRの第一引数はfalseになることを期待
+    // Expect the first argument of useSWR to be false
     expect((useSWR as jest.Mock).mock.calls[0][0]).toBe(false);
   });
 

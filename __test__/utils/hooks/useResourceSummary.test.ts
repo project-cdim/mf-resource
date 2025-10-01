@@ -127,7 +127,7 @@ describe('useResourceSummary', () => {
   });
 
   test('should handle mswInitializing true (should not fetch)', () => {
-    // mswInitializingのpropsは廃止されたため、常にfetchする仕様に合わせてテストも修正
+    // The mswInitializing prop has been abolished, so the test has been modified to match the specification that always fetches.
     (swrModule.default as jest.Mock).mockReturnValue({
       data: undefined,
       error: undefined,
@@ -135,7 +135,7 @@ describe('useResourceSummary', () => {
     });
     const { result } = renderHook(() => useResourceSummary());
     expect(result.current.data).toBeUndefined();
-    // useSWRのキーがfalseになることはないので、URLの一部を検証
+    // Since the key of useSWR will never be false, verify part of the URL
     expect((swrModule.default as jest.Mock).mock.calls[0][0]).toContain('/resources?detail=true');
   });
 

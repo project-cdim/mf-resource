@@ -24,7 +24,7 @@ import { StateToIcon } from '@/components/StateToIcon';
 import { DetectionStatusToIcon } from '@/components/DetectionStatusToIcon';
 import { AvailableToIcon } from '@/components/AvailableToIcon';
 
-// カスタム render 関数
+// Custom render function
 function render(ui: React.ReactElement) {
   return rtlRender(<MantineProvider>{ui}</MantineProvider>);
 }

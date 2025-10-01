@@ -39,7 +39,7 @@ export const Standard: Story = {
     title: 'Test',
     item: {
       device: {
-        type: 'CPU', // 必須プロパティを追加
+        type: 'CPU', // Add required property
         allocated: 25,
         all: 100,
       },

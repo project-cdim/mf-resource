@@ -196,7 +196,7 @@ describe('Summary Page', () => {
   });
 
   describe('handleTabChange logic', () => {
-    // HomeMainのロジックを直接テストするため、外部関数として切り出し
+    // To directly test the logic of HomeMain, we extract it as an external function
     function handleTabChangeLogic(setActiveTab: (v: string) => void, value: string | null) {
       setActiveTab(value || 'summary');
     }
@@ -271,7 +271,7 @@ describe('Summary Page', () => {
         singleGraphError: { message: 'singleError' },
       });
       render(<Home />);
-      // 3回MessageBoxが呼ばれる
+      // The MessageBox component is called three times
       expect((MessageBox as jest.Mock).mock.calls.length).toBeGreaterThanOrEqual(3);
     });
     test('Messages handles undefined error.message and error.response.data.message', () => {
