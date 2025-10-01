@@ -269,12 +269,12 @@ describe('Resource Detail Page', () => {
   test('handles resource fetch error without response data', () => {
     const errorMessage = 'Failed to fetch resource';
 
-    // モックでresponseプロパティがないエラーを作成
+    // Create a mock error without a response property
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       data: undefined,
       error: {
         message: errorMessage,
-        // responseプロパティがない
+        // No response property
       },
       isValidating: false,
       mutate: mockMutate,
@@ -282,7 +282,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // エラーメッセージが正しく表示されるか確認
+    // Check if the error message is displayed correctly
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];
@@ -293,18 +293,18 @@ describe('Resource Detail Page', () => {
     const messageBox = screen.getByTestId('mock-message-box');
     expect(messageBox).toHaveAttribute('data-type', 'error');
     expect(messageBox).toHaveAttribute('data-title', errorMessage);
-    expect(messageBox).toHaveAttribute('data-message', ''); // 空文字になる
+    expect(messageBox).toHaveAttribute('data-message', '');  // should be an empty string
   });
 
   test('handles resource fetch error with response but no data message', () => {
     const errorMessage = 'Failed to fetch resource';
 
-    // responseはあるがdata.messageがないエラーを作成
+    // Create an error with a response but no data.message
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       data: undefined,
       error: {
         message: errorMessage,
-        response: {}, // data.messageがない
+        response: {}, // no data.message
       },
       isValidating: false,
       mutate: mockMutate,
@@ -312,7 +312,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // エラーメッセージが空文字で表示されるか確認
+    // Check if the error message is displayed with empty string
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];
@@ -329,12 +329,12 @@ describe('Resource Detail Page', () => {
   test('handles resource fetch error with response but no data property', () => {
     const errorMessage = 'Failed to fetch resource';
 
-    // responseはあるがdataプロパティがないエラーを作成
+    // Create an error with a response but no data property
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       data: undefined,
       error: {
         message: errorMessage,
-        response: { status: 404 }, // dataプロパティがない
+        response: { status: 404 }, // no data property
       },
       isValidating: false,
       mutate: mockMutate,
@@ -342,7 +342,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // エラーメッセージが空文字で表示されるか確認
+    // Check if the error message is displayed with empty string
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];
@@ -359,12 +359,12 @@ describe('Resource Detail Page', () => {
   test('handles resource fetch error with empty data message', () => {
     const errorMessage = 'Failed to fetch resource';
 
-    // データにempty message stringを持つエラーを作成
+    // Create an error with response.data.message as an empty string
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       data: undefined,
       error: {
         message: errorMessage,
-        response: { data: { message: '' } }, // 空のメッセージ
+        response: { data: { message: '' } }, // empty message
       },
       isValidating: false,
       mutate: mockMutate,
@@ -372,7 +372,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // エラーメッセージが空文字で表示されるか確認
+    // Check if the error message is displayed with empty string
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];
