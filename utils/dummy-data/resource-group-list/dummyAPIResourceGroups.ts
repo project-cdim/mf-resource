@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -32,6 +32,15 @@ export const dummyAPIResourceGroup1: APIResourceGroup = {
           state: 'Enabled',
           health: 'OK',
         },
+        powerState: 'On',
+        powerCapability: true,
+        constraints: {
+          nonRemovableDevices: [
+            {
+              deviceID: 'string',
+            },
+          ],
+        },
       },
       resourceGroupIDs: ['1'],
       annotation: {
@@ -39,6 +48,25 @@ export const dummyAPIResourceGroup1: APIResourceGroup = {
       },
       detected: true,
       nodeIDs: ['1'],
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          // chassis: { id: '00000000-0000-0000-0000-000000000222', name: 'chassis001' },
+          chassis: { id: 'ch1', name: 'Jupiter XXXXXXXX' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+          // userItems: {
+          //   [index: string]: string | number | boolean | undefined,
+          // },
+        },
+      },
     },
     {
       device: {
@@ -48,6 +76,15 @@ export const dummyAPIResourceGroup1: APIResourceGroup = {
           state: 'Enabled',
           health: 'OK',
         },
+        powerState: 'On',
+        powerCapability: true,
+        constraints: {
+          nonRemovableDevices: [
+            {
+              deviceID: 'string',
+            },
+          ],
+        },
       },
       resourceGroupIDs: ['1'],
       annotation: {
@@ -55,6 +92,25 @@ export const dummyAPIResourceGroup1: APIResourceGroup = {
       },
       detected: true,
       nodeIDs: ['2'],
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          // chassis: { id: '00000000-0000-0000-0000-000000000222', name: 'chassis001' },
+          chassis: { id: 'ch1', name: 'Jupiter XXXXXXXX' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+          // userItems: {
+          //   [index: string]: string | number | boolean | undefined,
+          // },
+        },
+      },
     },
   ],
 };
@@ -75,6 +131,9 @@ export const dummyAPIResourceGroup2: APIResourceGroup = {
           state: 'Enabled',
           health: 'OK',
         },
+        powerState: 'On',
+        powerCapability: true,
+        constraints: {},
       },
       resourceGroupIDs: ['2'],
       annotation: {
@@ -82,6 +141,25 @@ export const dummyAPIResourceGroup2: APIResourceGroup = {
       },
       detected: true,
       nodeIDs: ['3'],
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          // chassis: { id: '00000000-0000-0000-0000-000000000222', name: 'chassis001' },
+          chassis: { id: 'ch1', name: 'Jupiter XXXXXXXX' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+          // userItems: {
+          //   [index: string]: string | number | boolean | undefined,
+          // },
+        },
+      },
     },
     {
       device: {
@@ -91,6 +169,9 @@ export const dummyAPIResourceGroup2: APIResourceGroup = {
           state: 'Enabled',
           health: 'OK',
         },
+        powerState: 'On',
+        powerCapability: true,
+        constraints: {},
       },
       resourceGroupIDs: ['2'],
       annotation: {
@@ -98,6 +179,25 @@ export const dummyAPIResourceGroup2: APIResourceGroup = {
       },
       detected: true,
       nodeIDs: ['4'],
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          // chassis: { id: '00000000-0000-0000-0000-000000000222', name: 'chassis001' },
+          chassis: { id: 'ch1', name: 'Jupiter XXXXXXXX' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+          // userItems: {
+          //   [index: string]: string | number | boolean | undefined,
+          // },
+        },
+      },
     },
   ],
 };

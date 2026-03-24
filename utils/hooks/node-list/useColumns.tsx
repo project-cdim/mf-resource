@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,11 +14,16 @@
  * under the License.
  */
 
-import { Group } from '@mantine/core';
+import { Box, Group, Stack } from '@mantine/core';
 import { DataTableColumn } from 'mantine-datatable';
 import { useTranslations } from 'next-intl';
 
-import { PageLink, TextInputForTableFilter, MultiSelectForTableFilter } from '@/shared-modules/components';
+import {
+  PageLink,
+  TextInputForTableFilter,
+  MultiSelectForTableFilter,
+  LongSentences,
+} from '@/shared-modules/components';
 
 import { APPNode } from '@/types';
 import {
@@ -26,6 +31,7 @@ import {
   HealthToIconForNodeCritical,
   HealthToIconForNodeWarning,
   StateToIconForNode,
+  PowerOffToIconForNode,
 } from '@/components';
 
 import { NodeListFilter, NumberOptionValue } from '@/utils/hooks/useNodeListFilter';
@@ -51,9 +57,11 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('id'),
       render: ({ id }) => {
         return (
-          <PageLink title={t('Node Details')} path='/cdim/res-node-detail' query={{ id }}>
-            {id}
-          </PageLink>
+          <Stack gap={0}>
+            <PageLink title={t('Node Details')} path='/cdim/res-node-detail' query={{ id }}>
+              <LongSentences text={id} />
+            </PageLink>
+          </Stack>
         );
       },
       filter: <TextInputForTableFilter label={t('ID')} value={nodeFilter.query.id} setValue={nodeFilter.setQuery.id} />,
@@ -84,14 +92,57 @@ export const useColumns = (
       filtering: nodeFilter.query.connected.length > 0,
     },
     {
+      // Temporarily hide the Power Off Resources column
+      accessor: 'device.poweroff',
+      title: t('Power Off Resources'),
+      sortable: true,
+      // hidden: !selectedAccessors.includes('device.poweroff'),
+      hidden: true,
+      render: ({ id, device }) => {
+        return device.poweroff ? (
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <PowerOffToIconForNode poweroffNumber={device.poweroff} />
+            </Box>
+            <PageLink
+              title={t('Resources.list')}
+              path={'/cdim/res-resource-list'}
+              query={{ nodeId: id, power: 'Off' }}
+              key={id}
+            >
+              {device.poweroff.toString()}
+            </PageLink>
+          </Group>
+        ) : (
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <PowerOffToIconForNode poweroffNumber={device.poweroff} />
+            </Box>
+            {device.poweroff.toString()}
+          </Group>
+        );
+      },
+      filter: (
+        <MultiSelectForTableFilter
+          label={t('Power Off Resources')}
+          options={nodeFilter.selectOptions.number}
+          value={nodeFilter.query.poweroff}
+          setValue={(value: string[]) => nodeFilter.setQuery.poweroff(value as NumberOptionValue[])}
+        />
+      ),
+      filtering: nodeFilter.query.poweroff.length > 0,
+    },
+    {
       accessor: 'device.disabled',
       title: t('Disabled Resources'),
       sortable: true,
       hidden: !selectedAccessors.includes('device.disabled'),
       render: ({ id, device }) => {
         return device.disabled ? (
-          <Group>
-            {StateToIconForNode(device.disabled)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <StateToIconForNode disabledResources={device.disabled} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
@@ -102,8 +153,10 @@ export const useColumns = (
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {StateToIconForNode(device.disabled)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <StateToIconForNode disabledResources={device.disabled} />
+            </Box>
             {device.disabled.toString()}
           </Group>
         );
@@ -125,8 +178,10 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.warning'),
       render: ({ id, device }) => {
         return device.warning ? (
-          <Group>
-            {HealthToIconForNodeWarning(device.warning)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeWarning warningNumber={device.warning} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
@@ -137,8 +192,10 @@ export const useColumns = (
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {HealthToIconForNodeWarning(device.warning)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeWarning warningNumber={device.warning} />
+            </Box>
             {device.warning.toString()}
           </Group>
         );
@@ -160,8 +217,10 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.critical'),
       render: ({ id, device }) => {
         return device.critical ? (
-          <Group>
-            {HealthToIconForNodeCritical(device.critical)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeCritical criticalNumber={device.critical} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
@@ -172,8 +231,10 @@ export const useColumns = (
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {HealthToIconForNodeCritical(device.critical)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeCritical criticalNumber={device.critical} />
+            </Box>
             {device.critical.toString()}
           </Group>
         );
@@ -190,13 +251,15 @@ export const useColumns = (
     },
     {
       accessor: 'device.resourceUnavailable',
-      title: t('Excluded Resources'),
+      title: t('Maintenance Resources'),
       sortable: true,
       hidden: !selectedAccessors.includes('device.resourceUnavailable'),
       render: ({ id, device }) => {
         return device.resourceUnavailable ? (
-          <Group>
-            {AvailableToIconForNode(device.resourceUnavailable)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <AvailableToIconForNode unavailableNumber={device.resourceUnavailable} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
@@ -207,15 +270,17 @@ export const useColumns = (
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {AvailableToIconForNode(device.resourceUnavailable)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <AvailableToIconForNode unavailableNumber={device.resourceUnavailable} />
+            </Box>
             {device.resourceUnavailable.toString()}
           </Group>
         );
       },
       filter: (
         <MultiSelectForTableFilter
-          label={t('Excluded Resources')}
+          label={t('Maintenance Resources')}
           options={nodeFilter.selectOptions.number}
           value={nodeFilter.query.unavailable}
           setValue={(value: string[]) => nodeFilter.setQuery.unavailable(value as NumberOptionValue[])}

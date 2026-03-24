@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -19,13 +19,44 @@ import { useTranslations } from 'next-intl';
 import { IconWithInfo } from '@/shared-modules/components';
 
 /**
+ * Props for StateToIcon component.
+ */
+export type StateToIconProps = {
+  state: string | undefined;
+};
+
+/**
+ * Get icon type based on state
+ * @param state - The state string
+ * @returns Icon type ('check', 'disabled', 'info', or null)
+ */
+const getIconType = (state: string): 'check' | 'disabled' | 'info' | null => {
+  if (state === 'Enabled') return 'check';
+  if (state === 'Disabled') return 'disabled';
+  const infoStates = [
+    'StandbyOffline',
+    'StandbySpare',
+    'InTest',
+    'Starting',
+    'Absent',
+    'UnavailableOffline',
+    'Deferring',
+    'Quiesced',
+    'Updating',
+    'Qualified',
+  ];
+  return infoStates.includes(state) ? 'info' : null;
+};
+
+/**
  * Converts a state string to an icon component with corresponding label.
- * @param state - The state string to convert.
+ * @param props - Component props.
+ * @param props.state - The state string to convert.
  * @returns The icon component with the corresponding label.
  */
-export const StateToIcon = (state: string | undefined) => {
+export const StateToIcon = ({ state }: StateToIconProps) => {
   const t = useTranslations();
-  const stateLabel = {
+  const stateLabel: Record<string, string> = {
     Enabled: t('Resource is enabled'),
     Disabled: t('Resource is disabled'),
     StandbyOffline: t('Resource is enabled but awaits an external action to activate it'),
@@ -42,36 +73,28 @@ export const StateToIcon = (state: string | undefined) => {
     Qualified: t('Resource quality is within the acceptable range of operation'),
   };
   if (!state) return null;
-  switch (state) {
-    case 'Enabled':
-      return <IconWithInfo type='check' label={stateLabel[state]} />;
-    case 'Disabled':
-      return <IconWithInfo type='disabled' label={stateLabel[state]} />;
-    case 'StandbyOffline':
-    case 'StandbySpare':
-    case 'InTest':
-    case 'Starting':
-    case 'Absent':
-    case 'UnavailableOffline':
-    case 'Deferring':
-    case 'Quiesced':
-    case 'Updating':
-    case 'Qualified':
-      return <IconWithInfo type='info' label={stateLabel[state]} />;
-    default:
-      return null;
-  }
+  const iconType = getIconType(state);
+  if (!iconType) return null;
+  return <IconWithInfo type={iconType} label={stateLabel[state]} />;
+};
+
+/**
+ * Props for StateToIconForNode component.
+ */
+export type StateToIconForNodeProps = {
+  disabledResources: number;
 };
 
 /**
  * Converts the number of disabled resources to an icon component.
- * @param disabled_resources The number of disabled resources.
+ * @param props - Component props.
+ * @param props.disabledResources - The number of disabled resources.
  * @returns The icon component based on the number of disabled resources.
  */
-export const StateToIconForNode = (disabled_resources: number) => {
+export const StateToIconForNode = ({ disabledResources }: StateToIconForNodeProps) => {
   const t = useTranslations();
 
-  return disabled_resources > 0 ? (
+  return disabledResources > 0 ? (
     <IconWithInfo type='disabled' label={t('Some resources are disabled')} />
   ) : (
     <IconWithInfo type='check' label={t('All resources are enabled')} />

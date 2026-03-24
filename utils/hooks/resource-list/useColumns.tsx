@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,25 +14,40 @@
  * under the License.
  */
 
-import { Group, Stack } from '@mantine/core';
+import { Box, Group, Stack } from '@mantine/core';
 import _ from 'lodash';
 import { DataTableColumn } from 'mantine-datatable';
 import { useTranslations } from 'next-intl';
 
-import { PageLink, TextInputForTableFilter, MultiSelectForTableFilter } from '@/shared-modules/components';
+import {
+  PageLink,
+  TextInputForTableFilter,
+  MultiSelectForTableFilter,
+  LongSentences,
+} from '@/shared-modules/components';
 import {
   APIDeviceAvailable,
   APIDeviceDetection,
   APIDeviceHealth,
+  APPDeviceOverallStatus,
+  APIDevicePowerState,
   APIDeviceState,
   APIDeviceType,
 } from '@/shared-modules/types';
 
 import { APPResource } from '@/types';
 
-import { AvailableToIcon, DetectionStatusToIcon, HealthToIcon, StateToIcon } from '@/components';
+import {
+  AvailableToIcon,
+  DetectionStatusToIcon,
+  HealthToIcon,
+  PowerStateToIcon,
+  StateToIcon,
+  StatusToIcon,
+} from '@/components';
 
 import { ResourceListFilter } from '@/utils/hooks/useResourceListFilter';
+import { parsePlacement } from '@/utils/parse';
 
 /**
  * Constructs columns for the resource list
@@ -54,9 +69,11 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('id'),
       render: ({ id }) => {
         return (
-          <PageLink title={t('Resource Details')} path='/cdim/res-resource-detail' query={{ id }}>
-            {id}
-          </PageLink>
+          <Stack gap={0}>
+            <PageLink title={t('Resource Details')} path='/cdim/res-resource-detail' query={{ id }}>
+              <LongSentences text={id} />
+            </PageLink>
+          </Stack>
         );
       },
       filter: (
@@ -73,6 +90,7 @@ export const useColumns = (
       title: t('Type'),
       sortable: true,
       hidden: !selectedAccessors.includes('type'),
+      noWrap: true,
       render: ({ type }) => {
         return _.upperFirst(type);
       },
@@ -87,14 +105,68 @@ export const useColumns = (
       filtering: resourceFilter.query.types.length > 0,
     },
     {
+      accessor: 'status',
+      title: t('Status'),
+      sortable: true,
+      hidden: !selectedAccessors.includes('status'),
+      render: ({ status }) => {
+        const displayStatus = status ? t(status) : '';
+        return (
+          <Group gap={5} wrap='nowrap' style={{ whiteSpace: 'nowrap' }}>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <StatusToIcon status={status} />
+            </Box>
+            {displayStatus}
+          </Group>
+        );
+      },
+      filter: (
+        <MultiSelectForTableFilter
+          label={t('Status')}
+          options={resourceFilter.selectOptions.status}
+          value={resourceFilter.query.statuses}
+          setValue={(value) => resourceFilter.setQuery.statuses(value as APPDeviceOverallStatus[])}
+        />
+      ),
+      filtering: resourceFilter.query.statuses.length > 0,
+    },
+    {
+      accessor: 'powerState',
+      title: t('Power State'),
+      sortable: true,
+      hidden: !selectedAccessors.includes('powerState'),
+      render: ({ powerState }) => {
+        const displayPowerState = t.has(powerState) ? t(powerState) : powerState;
+        return (
+          <Group gap={5} wrap='nowrap' style={{ whiteSpace: 'nowrap' }}>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <PowerStateToIcon powerState={powerState} />
+            </Box>
+            {displayPowerState}
+          </Group>
+        );
+      },
+      filter: (
+        <MultiSelectForTableFilter
+          label={t('Power State')}
+          options={resourceFilter.selectOptions.powerState}
+          value={resourceFilter.query.powerStates}
+          setValue={(value) => resourceFilter.setQuery.powerStates(value as APIDevicePowerState[])}
+        />
+      ),
+      filtering: resourceFilter.query.powerStates.length > 0,
+    },
+    {
       accessor: 'health',
       title: t('Health'),
       sortable: true,
       hidden: !selectedAccessors.includes('health'),
       render: ({ health }) => {
         return (
-          <Group gap={5}>
-            {HealthToIcon(health)}
+          <Group gap={5} wrap='nowrap' style={{ whiteSpace: 'nowrap' }}>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIcon health={health} />
+            </Box>
             {health}
           </Group>
         );
@@ -116,8 +188,10 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('state'),
       render: ({ state }) => {
         return (
-          <Group gap={5}>
-            {StateToIcon(state)}
+          <Group gap={5} wrap='nowrap' style={{ whiteSpace: 'nowrap' }}>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <StateToIcon state={state} />
+            </Box>
             {state}
           </Group>
         );
@@ -139,8 +213,10 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('detected'),
       render: ({ detected }) => {
         return (
-          <Group gap={5}>
-            {DetectionStatusToIcon(detected)}
+          <Group gap={5} wrap='nowrap' style={{ whiteSpace: 'nowrap' }}>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <DetectionStatusToIcon detected={detected} />
+            </Box>
             {detected ? t('Detected') : t('Not Detected')}
           </Group>
         );
@@ -154,6 +230,31 @@ export const useColumns = (
         />
       ),
       filtering: resourceFilter.query.detection.length > 0,
+    },
+    {
+      accessor: 'resourceAvailable',
+      title: t('Maintenance'),
+      sortable: true,
+      hidden: !selectedAccessors.includes('resourceAvailable'),
+      render: ({ resourceAvailable }) => {
+        return (
+          <Group gap={5} wrap='nowrap' style={{ whiteSpace: 'nowrap' }}>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <AvailableToIcon resourceAvailable={resourceAvailable} />
+            </Box>
+            {resourceAvailable === 'Available' ? '' : t('Under Maintenance')}
+          </Group>
+        );
+      },
+      filter: (
+        <MultiSelectForTableFilter
+          label={t('Maintenance')}
+          options={resourceFilter.selectOptions.available}
+          value={resourceFilter.query.available}
+          setValue={(value) => resourceFilter.setQuery.available(value as APIDeviceAvailable[])}
+        />
+      ),
+      filtering: resourceFilter.query.available.length > 0,
     },
     {
       accessor: 'resourceGroups',
@@ -178,7 +279,7 @@ export const useColumns = (
               query={{ id: id }}
               key={id}
             >
-              {name !== '' ? name : id}
+              <LongSentences text={name !== '' ? name : id} />
             </PageLink>
           ))}
         </Stack>
@@ -186,16 +287,56 @@ export const useColumns = (
       filtering: resourceFilter.query.resourceGroups !== '',
     },
     {
-      accessor: 'cxlSwitchId',
+      accessor: 'placement',
+      title: t('Placement'),
+      sortable: true,
+      hidden: !selectedAccessors.includes('placement'),
+      render: ({ placement }) => {
+        if (!placement || Object.keys(placement).length === 0) {
+          return undefined;
+        }
+        // Extract chassis name from placement string (format: "RackName/ChassisName")
+        const showPlacement = parsePlacement(placement);
+
+        return (
+          <Stack gap={0}>
+            <PageLink
+              title={t('Rack Elevations')}
+              path={'/cdim/res-rack'}
+              query={{ rackId: placement.rack.id, chassisId: placement.rack.chassis.id }}
+            >
+              {showPlacement && <LongSentences text={showPlacement} />}
+            </PageLink>
+          </Stack>
+        );
+      },
+      filter: (
+        <TextInputForTableFilter
+          label={t('Placement')}
+          value={resourceFilter.query.placement}
+          setValue={resourceFilter.setQuery.placement}
+        />
+      ),
+      filtering: resourceFilter.query.placement !== '',
+    },
+    {
+      accessor: 'cxlSwitch',
       title: t('CXL Switch'),
       sortable: true,
-      hidden: !selectedAccessors.includes('cxlSwitchId'),
+      hidden: !selectedAccessors.includes('cxlSwitch'),
+      render: ({ cxlSwitch }) => (
+        <Stack gap={0}>
+          {cxlSwitch.map((switchId) => (
+            <LongSentences key={switchId} text={switchId} />
+          ))}
+        </Stack>
+      ),
       filter: (
         <>
           <TextInputForTableFilter
             label={t('CXL Switch')}
-            value={resourceFilter.query.cxlSwitchId}
-            setValue={resourceFilter.setQuery.cxlSwitchId}
+            value={resourceFilter.query.cxlSwitch}
+            setValue={resourceFilter.setQuery.cxlSwitch}
           />
           <MultiSelectForTableFilter
             label={t('Allocate state')}
@@ -205,7 +346,7 @@ export const useColumns = (
           />
         </>
       ),
-      filtering: resourceFilter.query.allocatedCxl.length > 0 || resourceFilter.query.cxlSwitchId !== '',
+      filtering: resourceFilter.query.allocatedCxl.length > 0 || resourceFilter.query.cxlSwitch !== '',
     },
     {
       accessor: 'nodeIDs',
@@ -216,7 +357,7 @@ export const useColumns = (
         <Stack gap={0}>
           {nodeIDs.map((nodeId) => (
             <PageLink title={t('Node Details')} path={'/cdim/res-node-detail'} query={{ id: nodeId }} key={nodeId}>
-              {nodeId}
+              <LongSentences text={nodeId} />
             </PageLink>
           ))}
         </Stack>
@@ -239,27 +380,32 @@ export const useColumns = (
       filtering: resourceFilter.query.allocatedNodes.length > 0 || resourceFilter.query.nodeIDs !== '',
     },
     {
-      accessor: 'resourceAvailable',
-      title: t('Included in design'),
+      accessor: 'composite',
+      title: t('Composite Resource'),
       sortable: true,
-      hidden: !selectedAccessors.includes('resourceAvailable'),
-      render: ({ resourceAvailable }) => {
-        return (
-          <Group gap={5}>
-            {AvailableToIcon(resourceAvailable)}
-            {resourceAvailable === 'Available' ? t('Included') : t('Excluded')}
-          </Group>
-        );
-      },
+      noWrap: true,
+      hidden: !selectedAccessors.includes('composite'),
+      render: ({ composite }) =>
+        composite ? (
+          <PageLink
+            title={t('Composite Resource Details')}
+            path={'/cdim/res-composite-resource-detail'}
+            query={{ id: composite }}
+          >
+            {t('Composite')}
+          </PageLink>
+        ) : (
+          ''
+        ),
       filter: (
         <MultiSelectForTableFilter
-          label={t('Included in design')}
-          options={resourceFilter.selectOptions.available}
-          value={resourceFilter.query.available}
-          setValue={(value) => resourceFilter.setQuery.available(value as APIDeviceAvailable[])}
+          label={t('Composite Resource')}
+          options={resourceFilter.selectOptions.composite}
+          value={resourceFilter.query.composite}
+          setValue={(value) => resourceFilter.setQuery.composite(value as string[])}
         />
       ),
-      filtering: resourceFilter.query.available.length > 0,
+      filtering: resourceFilter.query.composite.length > 0,
     },
   ];
 };

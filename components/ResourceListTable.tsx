@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,9 +14,8 @@
  * under the License.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 
-import { Checkbox, Group, Stack, Text } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 
 import { CustomDataTable } from '@/shared-modules/components';
@@ -28,21 +27,30 @@ import { useColumns } from '@/utils/hooks/resource-list/useColumns';
 import { useResourceListFilter } from '@/utils/hooks/useResourceListFilter';
 import useSWRImmutable from 'swr/immutable';
 import { fetcher } from '@/shared-modules/utils';
+import { useTableSettings } from '@/shared-modules/utils/hooks';
+import { parseDevicePortList, parsePlacement } from '@/utils/parse';
 import { useResourceGroupsData } from '@/utils/hooks/useResourceGroupsData';
-// import { useMSW } from '@/shared-modules/utils/hooks';
+import { calculateOverallStatus } from '@/utils/calculateOverallStatus';
 
 /** Props for the ResourceListTable component */
 export type ResourceListTableProps = {
-  /** Selected accessors for display */
-  selectedAccessors: string[];
+  /** Selected default accessors for display */
+  defaultAccessors?: string[];
   /** Data */
   data: APPResource[];
   /** Loading state */
   loading: boolean;
+  /** Callback to notify parent of storage errors */
+  onStorageError?: (error: Error | undefined) => void;
+  /** Selected accessors to display */
+  selectedAccessors?: string[];
   /** Show accessor selector */
   showAccessorSelector?: boolean;
   /** Show pagination */
   showPagination?: boolean;
+  storeColumnsKey: string;
+  /** Table name for column settings modal */
+  tableName?: string;
 };
 
 /**
@@ -51,62 +59,91 @@ export type ResourceListTableProps = {
  * @returns JSX.Element to display the resource list
  */
 export const ResourceListTable = (props: ResourceListTableProps) => {
-  const { data, loading, showAccessorSelector = true, showPagination = true } = props;
+  const {
+    defaultAccessors,
+    data,
+    loading,
+    onStorageError,
+    selectedAccessors: selectedAccessorsProp,
+    showAccessorSelector = true,
+    showPagination = true,
+    storeColumnsKey,
+    tableName,
+  } = props;
   const t = useTranslations();
 
-  /** Select the columns to display */
-  const [selectedAccessors, setSelectedAccessors] = useState(props.selectedAccessors);
+  // Column definitions with labels
+  const columnDefinitions = useMemo(
+    () => [
+      { id: 'id', label: t('ID'), fixed: true },
+      { id: 'type', label: t('Type'), fixed: false },
+      { id: 'status', label: t('Status'), fixed: false },
+      { id: 'powerState', label: t('Power State'), fixed: false },
+      { id: 'health', label: t('Health'), fixed: false },
+      { id: 'state', label: t('State'), fixed: false },
+      { id: 'detected', label: t('Detection Status'), fixed: false },
+      { id: 'resourceAvailable', label: t('Maintenance'), fixed: false },
+      { id: 'resourceGroups', label: t('Resource Group'), fixed: false },
+      { id: 'placement', label: t('Placement'), fixed: false },
+      { id: 'cxlSwitch', label: t('CXL Switch'), fixed: false },
+      { id: 'nodeIDs', label: t('Node'), fixed: false },
+      { id: 'composite', label: t('Composite Resource'), fixed: false },
+    ],
+    [t]
+  );
+
+  const {
+    columns,
+    defaultColumns,
+    selectedAccessors: localSelectedAccessors,
+    handleSaveTableSettings: handleSaveLocal,
+    storageError,
+  } = useTableSettings(columnDefinitions, defaultAccessors || [], storeColumnsKey);
+
+  // Use prop if provided, otherwise fall back to stored columns
+  const selectedAccessors = selectedAccessorsProp || localSelectedAccessors;
+
+  // Notify parent component of storage errors
+  useEffect(() => {
+    if (onStorageError) {
+      onStorageError(storageError);
+    }
+  }, [storageError, onStorageError]);
 
   /** Custom hook for DataTable */
-  const { columns, records } = useColumnsAndRecords(data, selectedAccessors);
+  const { columns: tableColumns, records } = useColumnsAndRecords(data, selectedAccessors);
 
   return (
-    <Stack gap='xl'>
-      {showAccessorSelector && (
-        <Group align='center' wrap='nowrap' gap='xl'>
-          <Text fz='xs' style={{ flex: '0 0 auto' }}>
-            {t('Visible')}
-          </Text>
-          <Checkbox.Group value={selectedAccessors} onChange={setSelectedAccessors}>
-            <Group>
-              <Checkbox value='id' label={t('ID')} disabled />
-              <Checkbox value='type' label={t('Type')} />
-              <Checkbox value='health' label={t('Health')} />
-              <Checkbox value='state' label={t('State')} />
-              <Checkbox value='detected' label={t('Detection Status')} />
-              <Checkbox value='resourceGroups' label={t('Resource Group')} />
-              <Checkbox value='cxlSwitchId' label={t('CXL Switch')} />
-              <Checkbox value='nodeIDs' label={t('Node')} />
-              <Checkbox value='resourceAvailable' label={t('Included in design')} />
-            </Group>
-          </Checkbox.Group>
-        </Group>
-      )}
-      <CustomDataTable
-        records={records}
-        columns={columns}
-        loading={loading}
-        defaultSortColumn='id'
-        noPagination={!showPagination}
-      />
-    </Stack>
+    <CustomDataTable
+      records={records}
+      columns={tableColumns}
+      loading={loading}
+      defaultSortColumn='id'
+      noPagination={!showPagination}
+      showSettingsButton={showAccessorSelector}
+      tableName={tableName || t('Resources.list')}
+      settingsColumns={columns}
+      defaultColumns={defaultColumns}
+      onSaveTableSettings={handleSaveLocal}
+    />
   );
 };
 
 const useColumnsAndRecords = (data: APPResource[], selectedAccessors: string[] | []) => {
-  // Generate records with added resourceGroupsText
-  const dataWithResourceGroupsText = data.map((row) => ({
+  // Generate records with added resourceGroupsText and placementText
+  const dataWithTextFields = data.map((row) => ({
     ...row,
     resourceGroupsText: row.resourceGroups?.map((g) => (g.name !== '' ? g.name : g.id)).join(',') ?? '',
+    placementText: parsePlacement(row.placement) ?? '',
   }));
 
   /** Custom hook for filtering */
-  const userFilter = useResourceListFilter(dataWithResourceGroupsText);
+  const userFilter = useResourceListFilter(dataWithTextFields);
   const { filteredRecords } = userFilter;
 
   /** Column configuration */
   // Pass selectedAccessors as is
-  const columns = useColumnsWithResourceGroupsText(userFilter, selectedAccessors);
+  const columns = useColumnsWithTextFields(userFilter, selectedAccessors);
 
   return {
     columns,
@@ -114,12 +151,18 @@ const useColumnsAndRecords = (data: APPResource[], selectedAccessors: string[] |
   };
 };
 
-// Wrapper to replace only the accessor of the resourceGroups column with resourceGroupsText
-const useColumnsWithResourceGroupsText = (userFilter: any, selectedAccessors: string[]) => {
+// Wrapper to replace accessors for resourceGroups and placement columns with text versions
+const useColumnsWithTextFields = (userFilter: any, selectedAccessors: string[]) => {
   const columns = useColumns(userFilter, selectedAccessors);
-  return columns.map((col: any) =>
-    col.accessor === 'resourceGroups' ? { ...col, accessor: 'resourceGroupsText' } : col
-  );
+  return columns.map((col: any) => {
+    if (col.accessor === 'resourceGroups') {
+      return { ...col, accessor: 'resourceGroupsText' };
+    }
+    if (col.accessor === 'placement') {
+      return { ...col, accessor: 'placementText' };
+    }
+    return col;
+  });
 };
 
 /**
@@ -135,11 +178,8 @@ const useColumnsWithResourceGroupsText = (userFilter: any, selectedAccessors: st
  * - `mutate`: A function to revalidate and refresh both the raw and formatted resource data.
  */
 export const useResourceListTableData = () => {
-  // const mswInitializing = useMSW();
-  const mswInitializing = false;
-
   const { data, error, isValidating, mutate } = useSWRImmutable<APIresources>(
-    !mswInitializing && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources?detail=true`,
+    `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources?detail=true`,
     fetcher
   );
 
@@ -185,13 +225,18 @@ export const useFormatResourceListTableData = (data?: APIresource[]) => {
         const returnDevice: APPResource = {
           id: resource.device.deviceID,
           type: resource.device.type,
+          status: calculateOverallStatus(resource.device.status.health, resource.device.status.state),
+          powerState: resource.device.powerState,
           health: resource.device.status.health,
           state: resource.device.status.state,
           detected: resource.detected,
           resourceGroups: resource.resourceGroupIDs.map((id) => ({ id, name: getNameById(id) })),
-          cxlSwitchId: resource.device.deviceSwitchInfo ?? '',
+          placement: resource.physicalLocation,
+          cxlSwitch: parseDevicePortList(resource.device.devicePortList),
           nodeIDs: resource.nodeIDs,
-          resourceAvailable: resource.annotation.available ? 'Available' : 'Unavailable',
+          composite:
+            (resource.device.constraints?.nonRemovableDevices?.length ?? 0) > 0 ? resource.deviceUnit?.id || '' : '',
+          resourceAvailable: resource.deviceUnit.annotation.systemItems.available ? 'Available' : 'Unavailable',
         };
 
         return returnDevice;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -231,41 +231,39 @@ export const TabPanel = (props: TabPanelProps) => {
 
   /** Generate props for number information display */
   const getNumber = (type: APIDeviceType | 'summary'): NumberViewProps[] =>
-    [t('Total'), t('Unallocated'), t('Disabled'), t('Warning'), t('Critical'), t('Excluded from design')].map(
-      (title) => ({
-        title: title,
-        number:
-          data?.resources.filter(
-            (resource: APIresources['resources'][number]) =>
-              (type === 'summary' || resource.device.type === type) &&
-              (title === t('Total')
-                ? true
-                : title === t('Unallocated')
-                  ? !resource.nodeIDs.length
-                  : title === t('Disabled')
-                    ? resource.device.status.state === 'Disabled'
-                    : title === t('Warning')
-                      ? resource.device.status.health === 'Warning'
-                      : title === t('Critical')
-                        ? resource.device.status.health === 'Critical'
-                        : //title === t('Excluded from designs')
-                          !resource.annotation.available)
-          ).length ?? undefined, // Return undefined if not available
-        link: '/cdim/res-resource-list',
-        linkTitle: t('Resources.list'),
-        query: {
-          ...(type !== 'summary' && { type: [type] }),
-          ...(title === t('Unallocated') && { allocatednode: ['Unallocated'] }),
-          ...(title === t('Disabled') && { state: ['Disabled'] }),
-          ...(title === t('Warning') && { health: ['Warning'] }),
-          ...(title === t('Critical') && { health: ['Critical'] }),
-          ...(title === t('Excluded from design') && {
-            resourceAvailable: ['Unavailable'],
-          }),
-        },
-        loading: resourceLoading,
-      })
-    );
+    [t('Total'), t('Unallocated'), t('Disabled'), t('Warning'), t('Critical'), t('Under Maintenance')].map((title) => ({
+      title: title,
+      number:
+        data?.resources.filter(
+          (resource: APIresources['resources'][number]) =>
+            (type === 'summary' || resource.device.type === type) &&
+            (title === t('Total')
+              ? true
+              : title === t('Unallocated')
+                ? !resource.nodeIDs.length
+                : title === t('Disabled')
+                  ? resource.device.status.state === 'Disabled'
+                  : title === t('Warning')
+                    ? resource.device.status.health === 'Warning'
+                    : title === t('Critical')
+                      ? resource.device.status.health === 'Critical'
+                      : //title === t('Maintenance Resourcess')
+                        !resource.deviceUnit.annotation.systemItems.available)
+        ).length ?? undefined, // Return undefined if not available
+      link: '/cdim/res-resource-list',
+      linkTitle: t('Resources.list'),
+      query: {
+        ...(type !== 'summary' && { type: [type] }),
+        ...(title === t('Unallocated') && { allocatednode: ['Unallocated'] }),
+        ...(title === t('Disabled') && { state: ['Disabled'] }),
+        ...(title === t('Warning') && { health: ['Warning'] }),
+        ...(title === t('Critical') && { health: ['Critical'] }),
+        ...(title === t('Under Maintenance') && {
+          resourceAvailable: ['Unavailable'],
+        }),
+      },
+      loading: resourceLoading,
+    }));
 
   /** Data on the number of resources in the node configuration: Generate props for number information display */
   const getAllocatedItem = (tab: TabPanelTab): AllocatedViewProps['item'] => {
@@ -278,7 +276,7 @@ export const TabPanel = (props: TabPanelProps) => {
         /** Number of allocated resources */
         allocated: data.resources.filter(
           (resource: APIresources['resources'][number]) =>
-            (tab === 'summary' || resource.device.type === tab) && resource.nodeIDs.length
+            (tab === 'summary' || resource.device.type === tab) && resource.nodeIDs.length > 0
         ).length,
         /** Total number of resources */
         all: data.resources.filter(
@@ -287,14 +285,14 @@ export const TabPanel = (props: TabPanelProps) => {
       },
     };
     const typeKey = tab === 'summary' ? false : typeToVolumeKey[tab];
-    if (isAPIDeviceType(tab) && typeKey !== false) {
+    if (isAPIDeviceType(tab) && typeKey !== false && typeKey !== undefined) {
       const allVolume = data.resources
         .filter((resource: APIresources['resources'][number]) => resource.device.type === tab)
         .reduce((acc: number, resource: APIresources['resources'][number]) => acc + (resource.device[typeKey] ?? 0), 0);
       const unit = typeToUnit(tab, allVolume);
       const allocatedVolume = data.resources
         .filter(
-          (resource: APIresources['resources'][number]) => resource.device.type === tab && resource.nodeIDs.length
+          (resource: APIresources['resources'][number]) => resource.device.type === tab && resource.nodeIDs.length > 0
         )
         .reduce((acc: number, resource: APIresources['resources'][number]) => acc + (resource.device[typeKey] ?? 0), 0);
       allocatedItem.volume = {

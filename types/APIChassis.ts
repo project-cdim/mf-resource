@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,14 +14,14 @@
  * under the License.
  */
 
-import { APIresource } from '@/shared-modules/types';
+import { APIresourceForRackChassisDeviceUnit, APIDeviceUnitAnnotation } from '@/shared-modules/types';
 
 /** Definition of chassis information */
 export type APIChassis = {
   /** Chassis ID */
   id: string;
   /** Chassis name */
-  name: string;
+  name?: string;
   /** Model Name */
   modelName: string;
   /** Description */
@@ -30,12 +30,32 @@ export type APIChassis = {
   unitPosition: number;
   /** Front / Rear */
   facePosition: 'Front' | 'Rear';
-  /** Height (U) */
+  /** Height */
   height: number;
   /** Depth */
   depth: 'Half' | 'Full';
-  /** Last Update */
-  lastUpdate: string;
-  /** Resources */
-  resources: APIresource[];
+  /** Created date and time */
+  createdAt: string;
+  /** Updated date and time */
+  updatedAt: string;
+  /** Device units list */
+  deviceUnits: APIchassisDeviceUnit[];
+  /** CXL switches list */
+  CXLSwitches: APIchassisCXLSwitch[];
+};
+
+/** Definition of device unit in chassis */
+export type APIchassisDeviceUnit = {
+  /** Device unit ID */
+  id: string;
+  /** Device unit annotation */
+  annotation: APIDeviceUnitAnnotation;
+  /** Resources belonging to the device unit */
+  resources: APIresourceForRackChassisDeviceUnit[];
+};
+
+/** Definition of CXL switch in chassis */
+export type APIchassisCXLSwitch = {
+  /** CXL switch ID */
+  id: string;
 };

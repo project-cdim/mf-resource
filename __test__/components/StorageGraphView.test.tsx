@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -133,5 +133,22 @@ describe('StorageGraphView', () => {
     expect(allocatedLegend).toHaveTextContent('Allocated 50% (2.00 GiB)');
     const overallLegend = screen.getByText(/^Total Capacity/);
     expect(overallLegend).toHaveTextContent('Total Capacity 4.00 GiB');
+  });
+
+  test('executes new Date(date) when date prop is provided', () => {
+    const props: StorageGraphViewProps = {
+      title: 'Storage Usage with Date',
+      data: {
+        used: 1 * 1024 ** 3,
+        allocated: 2 * 1024 ** 3,
+        overall: 4 * 1024 ** 3,
+      },
+      loading: false,
+      date: '2025-01-15T12:00:00Z',
+    };
+
+    render(<StorageGraphView {...props} />);
+
+    expect(screen.getByText(/At .*/)).toBeInTheDocument();
   });
 });

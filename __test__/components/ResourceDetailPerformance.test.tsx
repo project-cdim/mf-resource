@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -24,12 +24,16 @@ import { ResourceDetailPerformance } from '@/components';
 // Mock shared components
 jest.mock('@/shared-modules/components', () => {
   // Return a persistent mock for the GraphView component
-  const GraphViewMock = jest.fn(({ title, loading }) => {
+  const GraphViewMock = jest.fn(({ title, loading, showMenu }) => {
     if (!title) {
       return <div data-testid='mock-graph-view-empty'>No data</div>;
     }
     return (
-      <div data-testid={`mock-graph-view-${title.replace(/\s+/g, '-').toLowerCase()}`} data-loading={loading}>
+      <div
+        data-testid={`mock-graph-view-${title.replace(/\s+/g, '-').toLowerCase()}`}
+        data-loading={loading}
+        data-showmenu={showMenu}
+      >
         {title}
       </div>
     );
@@ -70,11 +74,13 @@ describe('ResourceDetailPerformance', () => {
   const mockResource: APIresource = {
     device: {
       deviceID: 'device123',
-      type: 'CPU', // Can be changed for different tests
+      type: 'CPU',
       status: {
         health: 'OK',
         state: 'Enabled',
       },
+      powerState: 'On',
+      powerCapability: true,
     },
     annotation: {
       available: true,
@@ -82,6 +88,14 @@ describe('ResourceDetailPerformance', () => {
     detected: true,
     nodeIDs: ['node1'],
     resourceGroupIDs: ['group1'],
+    deviceUnit: {
+      id: 'unit123',
+      annotation: {
+        systemItems: {
+          available: true,
+        },
+      },
+    },
   };
 
   const mockNetworkResource: APIresource = {
@@ -89,6 +103,8 @@ describe('ResourceDetailPerformance', () => {
     device: {
       ...mockResource.device,
       type: 'networkInterface',
+      powerState: 'On',
+      powerCapability: true,
     },
   };
 

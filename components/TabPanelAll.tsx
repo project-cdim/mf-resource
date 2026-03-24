@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -227,8 +227,8 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
                     ? resource.device.status.health === 'Warning'
                     : title === t('Critical Resources')
                       ? resource.device.status.health === 'Critical'
-                      : //title === t('Excluded from designs')
-                        !resource.annotation.available)
+                      : //title === t('Maintenance Resourcess')
+                        !resource.deviceUnit.annotation.systemItems.available)
         ).length ?? undefined, // If it cannnot be obtained, it is undefined
       link: '/cdim/res-resource-list',
       linkTitle: t('Resources.list'),
@@ -238,7 +238,7 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
         ...(title === t('Disabled Resources') && { state: ['Disabled'] }),
         ...(title === t('Warning Resources') && { health: ['Warning'] }),
         ...(title === t('Critical Resources') && { health: ['Critical'] }),
-        ...(title === t('Excluded Resources') && {
+        ...(title === t('Maintenance Resources') && {
           resourceAvailable: ['Unavailable'],
         }),
       },
@@ -298,7 +298,7 @@ export const TabPanelAll = (props: TabPanelAllProps) => {
     t('Disabled Resources'),
     t('Warning Resources'),
     t('Critical Resources'),
-    t('Excluded Resources'),
+    t('Maintenance Resources'),
   ];
   /** Create graph group components */
   const graphGroups = (

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -48,6 +48,11 @@ jest.mock('@mantine/charts', () => ({
   ChartTooltip: jest.fn(() => <div data-testid='mocked-chart-tooltip'>Mocked ChartTooltip</div>),
 }));
 
+jest.mock('@/components/GraphGroup', () => ({
+  __esModule: true,
+  GraphGroup: jest.fn(() => <div data-testid='mocked-graph-group'>Mocked GraphGroup</div>),
+}));
+
 // Utility for generating all tabs with correct type
 const allTabs: (APIDeviceType | 'all')[] = [
   'all',
@@ -73,7 +78,7 @@ const data: APIresources = {
       device: {
         baseSpeedMHz: 4000,
         deviceID: 'res101',
-        deviceSwitchInfo: 'CXL11',
+        devicePortList: [{ fabricID: 'fabric1', switchID: 'CXL11' }],
         links: [
           {
             deviceID: 'res202',
@@ -85,10 +90,31 @@ const data: APIresources = {
           state: 'Enabled',
         },
         type: 'CPU',
+        powerState: 'On',
+        powerCapability: true,
+        totalCores: 8,
       },
       detected: true,
       nodeIDs: ['node01'],
       resourceGroupIDs: [],
+      deviceUnit: {
+        id: 'unit-001',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
+      physicalLocation: {
+        rack: {
+          id: 'rack-001',
+          name: 'rack001',
+          chassis: {
+            id: 'chassis-001',
+            name: 'chassis001',
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -97,7 +123,7 @@ const data: APIresources = {
       device: {
         baseSpeedMHz: 4000,
         deviceID: 'res102',
-        deviceSwitchInfo: 'CXL11',
+        devicePortList: [{ fabricID: 'fabric1', switchID: 'CXL11' }],
         links: [
           {
             deviceID: 'res203',
@@ -117,10 +143,31 @@ const data: APIresources = {
           state: 'Enabled',
         },
         type: 'CPU',
+        powerState: 'On',
+        powerCapability: true,
+        totalCores: 16,
       },
       detected: true,
       nodeIDs: [],
       resourceGroupIDs: [],
+      deviceUnit: {
+        id: 'unit-002',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
+      physicalLocation: {
+        rack: {
+          id: 'rack-002',
+          name: 'rack002',
+          chassis: {
+            id: 'chassis-002',
+            name: 'chassis002',
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -128,17 +175,37 @@ const data: APIresources = {
       },
       device: {
         deviceID: 'res103',
-        deviceSwitchInfo: 'CXL11',
+        devicePortList: [{ fabricID: 'fabric1', switchID: 'CXL11' }],
         links: [],
         status: {
           health: 'OK',
           state: 'Enabled',
         },
         type: 'Accelerator',
+        powerState: 'On',
+        powerCapability: true,
       },
       detected: false,
       nodeIDs: [],
       resourceGroupIDs: [],
+      deviceUnit: {
+        id: 'unit-003',
+        annotation: {
+          systemItems: {
+            available: false,
+          },
+        },
+      },
+      physicalLocation: {
+        rack: {
+          id: 'rack-003',
+          name: 'rack003',
+          chassis: {
+            id: 'chassis-003',
+            name: 'chassis003',
+          },
+        },
+      },
     },
   ],
 };
@@ -275,5 +342,119 @@ describe('TabPanelAll', () => {
     expect((singleGraphHooks.useSummarySingleGraph as jest.Mock).mock.calls[0][0]).toEqual(
       allTabs.filter((t) => t !== 'all')
     );
+  });
+
+  test('handles device without volume property (undefined speedMbps for networkInterface)', () => {
+    const mockDataWithoutSpeed: APIresources = {
+      count: 2,
+      resources: [
+        {
+          annotation: { available: true },
+          device: {
+            deviceID: 'net001',
+            type: 'networkInterface',
+            status: { health: 'OK', state: 'Enabled' },
+            // speedMbps is undefined - this resource is ALLOCATED (has nodeIDs)
+            powerState: 'On',
+            powerCapability: true,
+          },
+          detected: true,
+          nodeIDs: ['node1'], // This is allocated
+          resourceGroupIDs: [],
+          deviceUnit: {
+            id: 'unit-net-001',
+            annotation: { systemItems: { available: true } },
+          },
+          physicalLocation: { rack: { id: 'rack-001', name: 'rack001', chassis: { id: 'ch-001', name: 'ch001' } } },
+        },
+        {
+          annotation: { available: true },
+          device: {
+            deviceID: 'net002',
+            type: 'networkInterface',
+            status: { health: 'OK', state: 'Enabled' },
+            speedMbps: 10000,
+            powerState: 'On',
+            powerCapability: true,
+          },
+          detected: true,
+          nodeIDs: [],
+          resourceGroupIDs: [],
+          deviceUnit: {
+            id: 'unit-net-002',
+            annotation: { systemItems: { available: true } },
+          },
+          physicalLocation: { rack: { id: 'rack-002', name: 'rack002', chassis: { id: 'ch-002', name: 'ch002' } } },
+        },
+      ],
+    };
+    (hooks.useResourceSummary as jest.Mock).mockReturnValueOnce({ data: mockDataWithoutSpeed, isValidating: false });
+
+    const mockDateRange: [Date, Date] = [new Date('2025-05-01'), new Date('2025-05-02')];
+    const mockSetDateRange = jest.fn();
+
+    render(
+      <Tabs defaultValue='all'>
+        <TabPanelAll tabs={['networkInterface']} dateRange={mockDateRange} setDateRange={mockSetDateRange} />
+      </Tabs>
+    );
+    expect(screen.getByText('Allocated Resources')).toBeInTheDocument();
+  });
+
+  test('handles memory device without capacityMiB (undefined volume)', () => {
+    const mockDataWithoutCapacity: APIresources = {
+      count: 2,
+      resources: [
+        {
+          annotation: { available: true },
+          device: {
+            deviceID: 'mem001',
+            type: 'memory',
+            status: { health: 'OK', state: 'Enabled' },
+            // capacityMiB is undefined - both allocated and unallocated to cover both branches
+            powerState: 'On',
+            powerCapability: true,
+          },
+          detected: true,
+          nodeIDs: ['node1'], // This is allocated
+          resourceGroupIDs: [],
+          deviceUnit: {
+            id: 'unit-mem-001',
+            annotation: { systemItems: { available: true } },
+          },
+          physicalLocation: { rack: { id: 'rack-001', name: 'rack001', chassis: { id: 'ch-001', name: 'ch001' } } },
+        },
+        {
+          annotation: { available: true },
+          device: {
+            deviceID: 'mem002',
+            type: 'memory',
+            status: { health: 'OK', state: 'Enabled' },
+            // capacityMiB is also undefined
+            powerState: 'On',
+            powerCapability: true,
+          },
+          detected: true,
+          nodeIDs: [], // This is unallocated
+          resourceGroupIDs: [],
+          deviceUnit: {
+            id: 'unit-mem-002',
+            annotation: { systemItems: { available: true } },
+          },
+          physicalLocation: { rack: { id: 'rack-002', name: 'rack002', chassis: { id: 'ch-002', name: 'ch002' } } },
+        },
+      ],
+    };
+    (hooks.useResourceSummary as jest.Mock).mockReturnValueOnce({ data: mockDataWithoutCapacity, isValidating: false });
+
+    const mockDateRange: [Date, Date] = [new Date('2025-05-01'), new Date('2025-05-02')];
+    const mockSetDateRange = jest.fn();
+
+    render(
+      <Tabs defaultValue='all'>
+        <TabPanelAll tabs={['memory']} dateRange={mockDateRange} setDateRange={mockSetDateRange} />
+      </Tabs>
+    );
+    expect(screen.getByText('Allocated Resources')).toBeInTheDocument();
   });
 });

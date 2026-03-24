@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -28,11 +28,21 @@ const minimalAPIresource: APIresource = {
     type: 'CPU',
     status: { state: 'Enabled', health: 'OK' },
     attribute: {},
+    powerState: 'On',
+    powerCapability: true,
   },
   resourceGroupIDs: [],
   annotation: { available: true },
   detected: true,
   nodeIDs: [],
+  deviceUnit: {
+    id: 'unit001',
+    annotation: {
+      systemItems: {
+        available: true,
+      },
+    },
+  },
 };
 
 // Helper to create APIresources shape from dummyAPPResource
@@ -127,7 +137,7 @@ describe('useResourceSummary', () => {
   });
 
   test('should handle mswInitializing true (should not fetch)', () => {
-    // The mswInitializing prop has been abolished, so the test has been modified to match the specification that always fetches.
+    // The mswInitializing prop has been deprecated, so the test is updated to reflect that it always fetches data.
     (swrModule.default as jest.Mock).mockReturnValue({
       data: undefined,
       error: undefined,
@@ -135,7 +145,7 @@ describe('useResourceSummary', () => {
     });
     const { result } = renderHook(() => useResourceSummary());
     expect(result.current.data).toBeUndefined();
-    // Since the key of useSWR will never be false, verify part of the URL
+    // Since the mswInitializing prop is deprecated, the hook should always attempt to fetch data. Therefore, we check that the SWR key contains the expected URL path.
     expect((swrModule.default as jest.Mock).mock.calls[0][0]).toContain('/resources?detail=true');
   });
 

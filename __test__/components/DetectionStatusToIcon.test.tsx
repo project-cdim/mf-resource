@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -30,7 +30,7 @@ describe('DetectionStatusToIcon', () => {
   });
 
   test('Returns IconWithInfo with "check" type and "Resource is responding" label when detected is true', () => {
-    render(DetectionStatusToIcon(true));
+    render(<DetectionStatusToIcon detected={true} />);
 
     expect(IconWithInfo).toHaveBeenCalledTimes(1);
     expect((IconWithInfo as jest.Mock).mock.calls[0][0].type).toBe('check');
@@ -38,7 +38,7 @@ describe('DetectionStatusToIcon', () => {
   });
 
   test('Returns IconWithInfo with "critical" type and "Resource is not responding" label when detected is false', () => {
-    render(DetectionStatusToIcon(false));
+    render(<DetectionStatusToIcon detected={false} />);
 
     expect(IconWithInfo).toHaveBeenCalledTimes(1);
     expect((IconWithInfo as jest.Mock).mock.calls[0][0].type).toBe('critical');
@@ -46,32 +46,32 @@ describe('DetectionStatusToIcon', () => {
   });
 
   test('Returns null when detected is undefined', () => {
-    render(DetectionStatusToIcon(undefined));
+    render(<DetectionStatusToIcon detected={undefined} />);
 
     expect(IconWithInfo).not.toHaveBeenCalled();
   });
 
   test('Boundary test: Returns correct icon types for true and false', () => {
     // boolean true
-    render(DetectionStatusToIcon(true));
+    render(<DetectionStatusToIcon detected={true} />);
     expect((IconWithInfo as jest.Mock).mock.calls[0][0].type).toBe('check');
 
     jest.clearAllMocks();
 
     // true as 1 (truthy)
-    render(DetectionStatusToIcon(true as boolean));
+    render(<DetectionStatusToIcon detected={true as boolean} />);
     expect((IconWithInfo as jest.Mock).mock.calls[0][0].type).toBe('check');
 
     jest.clearAllMocks();
 
     // boolean false
-    render(DetectionStatusToIcon(false));
+    render(<DetectionStatusToIcon detected={false} />);
     expect((IconWithInfo as jest.Mock).mock.calls[0][0].type).toBe('critical');
 
     jest.clearAllMocks();
 
     // false as 0 (falsy)
-    render(DetectionStatusToIcon(false as boolean));
+    render(<DetectionStatusToIcon detected={false as boolean} />);
     expect((IconWithInfo as jest.Mock).mock.calls[0][0].type).toBe('critical');
   });
 });

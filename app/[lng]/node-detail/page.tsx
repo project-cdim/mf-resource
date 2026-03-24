@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -16,17 +16,24 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { Box, Group, Stack, Text, Title } from '@mantine/core';
 import _ from 'lodash';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWRImmutable from 'swr/immutable';
 
-import { CardLoading, GraphView, MessageBox, PageHeader } from '@/shared-modules/components';
+import { CardLoading, GraphView, HorizontalTable, MessageBox, PageHeader } from '@/shared-modules/components';
 import { GRAPH_CARD_HEIGHT, deviceTypeOrder } from '@/shared-modules/constant';
 import styles from '@/shared-modules/styles/styles.module.css';
-import { APIDeviceType, APIPromQL, APInode, APIresource, APIresourceForNodeDetail } from '@/shared-modules/types';
+import {
+  APIDevicePowerState,
+  APIDeviceType,
+  APIPromQL,
+  APInode,
+  APIresource,
+  APIresourceForNodeDetail,
+} from '@/shared-modules/types';
 import {
   fetcher,
   fetcherForPromqlByPost,
@@ -42,7 +49,7 @@ import {
 } from '@/shared-modules/utils';
 import { useIdFromQuery, useLoading, useMetricDateRange } from '@/shared-modules/utils/hooks';
 import { getStepFromRange } from '@/shared-modules/utils/graphParsers';
-import { DisplayPeriodPicker, ResourceListTable, useFormatResourceListTableData } from '@/components';
+import { DisplayPeriodPicker, PowerStateToIcon, ResourceListTable, useFormatResourceListTableData } from '@/components';
 import { APPResource } from '@/types';
 
 /**
@@ -59,9 +66,6 @@ const NodeDetail = () => {
     { title: `${t('Node Details')} <${nodeId}>` },
   ];
 
-  // const mswInitializing = useMSW();
-  const mswInitializing = false; // Do not use MSW
-
   const [dateRange, setDateRange] = useState<[Date, Date]>(() => {
     const today = new Date();
     const oneMonthAgo = new Date(today);
@@ -71,6 +75,7 @@ const NodeDetail = () => {
   });
   const [metricStartDate, metricEndDate] = useMetricDateRange(dateRange);
 
+  const [storageError, setStorageError] = useState<Error | undefined>();
   const { data, error, isValidating, mutate } = useSWRImmutable<APInode>(
     nodeId && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/nodes/${nodeId}`,
     fetcher
@@ -78,12 +83,12 @@ const NodeDetail = () => {
 
   // NOTE: According to the backend API specification, there is a premise that each resource can only belong to one node.
   //       So nodeIDs will always be an array with a parent node id.
-  const resources = useMemo(
+  const resources: APIresource[] = useMemo(
     () =>
       data?.resources.map((resource) => ({
         ...resource,
         nodeIDs: [nodeId],
-      })),
+      })) ?? [],
     [data, nodeId]
   );
 
@@ -102,13 +107,15 @@ const NodeDetail = () => {
     graphMutate();
   };
 
-  const nodeLoading = useLoading(isValidating || mswInitializing);
-  const loading = useLoading(isValidating || mswInitializing || graphValidating);
+  const nodeLoading = useLoading(isValidating);
+  const loading = useLoading(isValidating || graphValidating);
 
   return (
     <>
       <Stack gap='xl'>
         <PageHeader pageTitle={t('Node Details')} items={items} mutate={reload} loading={loading || rgIsValidating} />
+
+        {storageError && <MessageBox type='error' title={storageError.message} message={''} />}
         <Messages error={error} graphError={graphError} rgError={rgError} />
 
         <Summary data={data} loading={nodeLoading} />
@@ -123,7 +130,11 @@ const NodeDetail = () => {
           dateRange={dateRange}
           setDateRange={setDateRange}
         />
-        <ResourceList resources={formattedData} loading={nodeLoading || rgIsValidating} />
+        <ResourceList
+          resources={formattedData}
+          loading={nodeLoading || rgIsValidating}
+          setStorageError={setStorageError}
+        />
       </Stack>
     </>
   );
@@ -236,6 +247,53 @@ const useGraphData = (data: APInode | undefined, metricStartDate: string, metric
 };
 
 /**
+ * Helper function to get node power state from CPU resource
+ */
+const getNodePowerState = (data: APInode | undefined): APIDevicePowerState | undefined => {
+  const cpuResource = data?.resources.find(
+    (resource) => resource.device.deviceID === data?.id && resource.device.type === 'CPU'
+  );
+  return cpuResource?.device.powerState;
+};
+
+/**
+ * Helper function to calculate resource statistics for a node
+ */
+const calculateResourceStats = (data: APInode | undefined) => {
+  if (!data) {
+    return {
+      numberOfResources: undefined,
+      numberOfDisabledResources: undefined,
+      numberOfWarningResources: undefined,
+      numberOfCriticalResources: undefined,
+      numberOfUnavailableResources: undefined,
+      numberOfPowerOffResources: undefined,
+    };
+  }
+
+  return {
+    numberOfResources: data.resources.length,
+    numberOfDisabledResources: data.resources.filter((item) => item.device.status.state === 'Disabled').length,
+    numberOfWarningResources: data.resources.filter((item) => item.device.status.health === 'Warning').length,
+    numberOfCriticalResources: data.resources.filter((item) => item.device.status.health === 'Critical').length,
+    numberOfUnavailableResources: data.resources.filter(
+      (item) => item.deviceUnit.annotation.systemItems.available === false
+    ).length,
+    numberOfPowerOffResources: data.resources.filter((item) => item.device.powerState === 'Off').length,
+  };
+};
+
+/**
+ * Get class name based on value and style
+ * @param value - The value to check
+ * @param styleClass - The style class to return if value is valid
+ * @returns The class name or empty string
+ */
+const getClassNameIfValid = (value: number | undefined, styleClass: string): string => {
+  return value !== 0 && value !== undefined ? styleClass : '';
+};
+
+/**
  * Renders a summary of node details.
  *
  * @component
@@ -246,58 +304,70 @@ const useGraphData = (data: APInode | undefined, metricStartDate: string, metric
 const Summary = ({ data, loading }: { data?: APInode; loading: boolean }) => {
   const t = useTranslations();
 
-  let id: string | undefined;
-  let numberOfResources: number | undefined;
-  let numberOfDisabledResources: number | undefined;
-  let numberOfWarningResources: number | undefined;
-  let numberOfCriticalResources: number | undefined;
-  let numberOfExcludedResources: number | undefined;
+  const id = data?.id;
+  const powerState = getNodePowerState(data);
+  const {
+    numberOfResources,
+    numberOfDisabledResources,
+    numberOfWarningResources,
+    numberOfCriticalResources,
+    numberOfUnavailableResources,
+    numberOfPowerOffResources,
+  } = calculateResourceStats(data);
 
-  if (data) {
-    id = data.id;
-    numberOfResources = data.resources.length;
-    numberOfDisabledResources = data.resources.filter((item) => item.device.status.state === 'Disabled').length;
-    numberOfWarningResources = data.resources.filter((item) => item.device.status.health === 'Warning').length;
-    numberOfCriticalResources = data.resources.filter((item) => item.device.status.health === 'Critical').length;
-    numberOfExcludedResources = data.resources.filter((item) => item.annotation.available === false).length;
-  }
+  const tableData = [
+    {
+      columnName: t('Node ID'),
+      value: data && <Text>{id}</Text>,
+    },
+    {
+      columnName: t('Power State'),
+      value: data && (
+        <Group gap={5}>
+          <PowerStateToIcon powerState={powerState} target='Node' />
+          {t.has(powerState) ? t(powerState) : powerState}
+        </Group>
+      ),
+    },
+  ];
 
   return (
     <Stack>
-      <CardLoading withBorder w={'43em'} loading={loading}>
-        <Text fz='sm'>{t('Node ID')}</Text>
-        <Text fz='lg' fw={500}>
-          {id}
-        </Text>
-      </CardLoading>
+      <HorizontalTable tableData={tableData} loading={loading} />
       <Title order={2} fz='lg'>
         {t('Resources.number')}
       </Title>
       <Group gap={'1em'}>
         <NumberOrVolumeCard title={t('Total')} value={numberOfResources} loading={loading} />
         <NumberOrVolumeCard
+          title={t('Power Off')}
+          value={numberOfPowerOffResources}
+          loading={loading}
+          className={getClassNameIfValid(numberOfPowerOffResources, styles.gray)}
+        />
+        <NumberOrVolumeCard
           title={t('Disabled')}
           value={numberOfDisabledResources}
           loading={loading}
-          className={numberOfDisabledResources !== 0 && numberOfDisabledResources !== undefined ? styles.red : ''}
+          className={getClassNameIfValid(numberOfDisabledResources, styles.red)}
         />
         <NumberOrVolumeCard
           title={t('Warning')}
           value={numberOfWarningResources}
           loading={loading}
-          className={numberOfWarningResources !== 0 && numberOfWarningResources !== undefined ? styles.yellow : ''}
+          className={getClassNameIfValid(numberOfWarningResources, styles.yellow)}
         />
         <NumberOrVolumeCard
           title={t('Critical')}
           value={numberOfCriticalResources}
           loading={loading}
-          className={numberOfCriticalResources !== 0 && numberOfCriticalResources !== undefined ? styles.red : ''}
+          className={getClassNameIfValid(numberOfCriticalResources, styles.red)}
         />
         <NumberOrVolumeCard
-          title={t('Excluded from design')}
-          value={numberOfExcludedResources}
+          title={t('Under Maintenance')}
+          value={numberOfUnavailableResources}
           loading={loading}
-          className={numberOfExcludedResources !== 0 && numberOfExcludedResources !== undefined ? styles.gray : ''}
+          className={getClassNameIfValid(numberOfUnavailableResources, styles.gray)}
         />
       </Group>
     </Stack>
@@ -381,6 +451,7 @@ const Performance = (props: PerformanceProps) => {
           stack={true}
           loading={props.loading}
           dateRange={props.dateRange}
+          showMenu={true}
         />
       </Box>
       <Group grow={true} align='strech' h={GRAPH_CARD_HEIGHT}>
@@ -390,6 +461,7 @@ const Performance = (props: PerformanceProps) => {
           valueFormatter={formatPercentValue}
           loading={props.loading}
           dateRange={props.dateRange}
+          showMenu={true}
         />
         <GraphView
           title={t('Memory Usage')}
@@ -397,6 +469,7 @@ const Performance = (props: PerformanceProps) => {
           valueFormatter={formatPercentValue}
           loading={props.loading}
           dateRange={props.dateRange}
+          showMenu={true}
         />
       </Group>
       <Group grow={true} h={GRAPH_CARD_HEIGHT}>
@@ -406,6 +479,7 @@ const Performance = (props: PerformanceProps) => {
           valueFormatter={formatPercentValue}
           loading={props.loading}
           dateRange={props.dateRange}
+          showMenu={true}
         />
         <GraphView
           title={t('Network Transfer Speed')}
@@ -419,10 +493,60 @@ const Performance = (props: PerformanceProps) => {
           valueFormatter={formatNetworkTransferValue}
           loading={props.loading}
           dateRange={props.dateRange}
+          showMenu={true}
         />
       </Group>
     </Stack>
   );
+};
+
+/**
+ * Calculate volume count for a specific device type
+ * @param resources - Array of resources
+ * @param type - Device type
+ * @returns Volume count
+ */
+const calculateVolumeCount = (resources: APIresourceForNodeDetail[], type: APIDeviceType): number => {
+  const typeKey = typeToVolumeKey[type];
+  if (typeKey === false) {
+    return 0;
+  }
+  return resources
+    .filter((resource) => resource.device.type === type)
+    .reduce((acc, resource) => {
+      const value = resource.device[typeKey as keyof typeof resource.device];
+      return acc + (typeof value === 'number' ? value : 0);
+    }, 0);
+};
+
+/**
+ * Create a volume card component for a device type
+ * @param type - Device type
+ * @param index - Index for key
+ * @param resources - Array of resources
+ * @param loading - Loading state
+ * @returns Volume card component or undefined
+ */
+const createVolumeCard = (
+  type: APIDeviceType,
+  index: number,
+  resources: APIresourceForNodeDetail[],
+  loading: boolean
+): React.ReactElement | undefined => {
+  const volumeCount = calculateVolumeCount(resources, type);
+  const unit = typeToUnit(type, volumeCount);
+  if (volumeCount) {
+    return (
+      <NumberOrVolumeCard
+        key={index}
+        title={_.upperFirst(type)}
+        value={formatUnitValue(type, volumeCount, unit)}
+        unit={unit}
+        loading={loading}
+      />
+    );
+  }
+  return undefined;
 };
 
 /**
@@ -432,37 +556,17 @@ const Performance = (props: PerformanceProps) => {
  */
 const VolumeCards = (props: {
   /** Resources */
-  resources: APIresourceForNodeDetail[];
+  resources?: APIresourceForNodeDetail[];
   /** Loading state */
   loading: boolean;
 }) => {
   const t = useTranslations();
-  if (!props.resources) {
+  if (!props.resources || props.resources.length === 0) {
     return null;
   }
   // Array of volume types to display
   const Cards = deviceTypeOrder
-    .map((type, index) => {
-      // Aggregate the number of volumes for each type
-      const typeKey = typeToVolumeKey[type];
-      const volumeCount = !typeKey
-        ? 0
-        : props.resources
-            .filter((resource) => resource.device.type === type)
-            .reduce((acc, resource) => acc + (resource.device[typeKey] ?? 0), 0);
-      const unit = typeToUnit(type, volumeCount);
-      if (volumeCount) {
-        return (
-          <NumberOrVolumeCard
-            key={index}
-            title={_.upperFirst(type)}
-            value={formatUnitValue(type, volumeCount, unit)}
-            unit={unit}
-            loading={props.loading}
-          />
-        );
-      }
-    })
+    .map((type, index) => createVolumeCard(type, index, props.resources!, props.loading))
     .filter((item) => item); // Exclude undefined
   if (!Cards.length) {
     return null;
@@ -477,19 +581,32 @@ const VolumeCards = (props: {
   );
 };
 
-const ResourceList = (props: { resources: APPResource[]; loading: boolean }) => {
+const ResourceList = (props: {
+  resources: APPResource[];
+  loading: boolean;
+  setStorageError: React.Dispatch<React.SetStateAction<Error | undefined>>;
+}) => {
   const t = useTranslations();
 
-  const selectedAccessors = [
+  // Default selected accessors
+  const defaultAccessors = [
     'id',
     'type',
-    'health',
-    'state',
+    'status',
+    'powerState',
+    // 'health',          // Hidden by default
+    // 'state',           // Hidden by default
     'detected',
-    'resourceGroups',
-    'cxlSwitchId',
     'resourceAvailable',
+    'resourceGroups',
+    'placement',
+    'cxlSwitch',
+    // 'nodeIDs',         // Hidden for node detail
+    // 'composite',       // Hidden by default
   ];
+
+  /** Key for storing column settings */
+  const storeColumnsKey = 'node-details.resource-list';
 
   return (
     <Stack>
@@ -497,11 +614,14 @@ const ResourceList = (props: { resources: APPResource[]; loading: boolean }) => 
         {t('Resources.list')}
       </Title>
       <ResourceListTable
-        selectedAccessors={selectedAccessors}
         data={props.resources}
         loading={props.loading}
         showAccessorSelector={true}
         showPagination={true}
+        defaultAccessors={defaultAccessors}
+        storeColumnsKey={storeColumnsKey}
+        tableName={t('Resources.list')}
+        onStorageError={props.setStorageError}
       />
     </Stack>
   );

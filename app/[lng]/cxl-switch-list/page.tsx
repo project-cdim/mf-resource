@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -16,17 +16,17 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-import { Checkbox, Group, Stack, Text } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 import useSWRImmutable from 'swr/immutable';
 
 import { MessageBox, PageHeader, CustomDataTable } from '@/shared-modules/components';
 import { fetcher } from '@/shared-modules/utils';
-import { useLoading } from '@/shared-modules/utils/hooks';
+import { useLoading, useTableSettings } from '@/shared-modules/utils/hooks';
 
-import { APIcxlswitchs, APPCxlSwitch } from '@/types';
+import { APIcxlswitches, APPCxlSwitch } from '@/types';
 
 import { useCxlSwitchListFilter } from '@/utils/hooks/useCxlSwitchListFilter';
 import { useColumns } from '@/utils/hooks/cxl-switch-list/useColumns';
@@ -38,7 +38,7 @@ import { useColumns } from '@/utils/hooks/cxl-switch-list/useColumns';
  */
 const CxlSwitchList = () => {
   const t = useTranslations();
-  const { data, error, isValidating, mutate } = useSWRImmutable<APIcxlswitchs>(
+  const { data, error, isValidating, mutate } = useSWRImmutable<APIcxlswitches>(
     `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/cxlswitches`,
     fetcher
   );
@@ -50,7 +50,7 @@ const CxlSwitchList = () => {
     // Set [] if data cannot be retrieved
     return (
       data?.CXLSwitches.map((cxlSwitch) => ({
-        id: cxlSwitch.id,
+        id: `${cxlSwitch.fabricID}-${cxlSwitch.cxlSwitchID}`,
         device: {
           connected: cxlSwitch.resources.length,
           unallocated: cxlSwitch.resources.filter((item) => item.nodeIDs.length === 0).length,
@@ -63,44 +63,63 @@ const CxlSwitchList = () => {
     );
   }, [data]);
 
-  /** Select the columns to display */
-  const [selectedAccessors, setSelectedAccessors] = useState([
-    'id',
-    'device.connected',
-    'device.unallocated',
-    'device.disabled',
-    'device.warning',
-    'device.critical',
-    'device.resourceUnavailable',
-  ]);
+  /** Default accessors for columns */
+  const defaultAccessors = useMemo(
+    () => [
+      'id',
+      'device.connected',
+      'device.unallocated',
+      'device.disabled',
+      'device.warning',
+      'device.critical',
+      'device.resourceUnavailable',
+    ],
+    []
+  );
+
+  // Column definitions with labels
+  const columnDefinitions = useMemo(
+    () => [
+      { id: 'id', label: 'ID', fixed: true },
+      { id: 'device.connected', label: t('Resources.number'), fixed: false },
+      { id: 'device.unallocated', label: t('Unallocated Resources'), fixed: false },
+      { id: 'device.disabled', label: t('Disabled Resources'), fixed: false },
+      { id: 'device.warning', label: t('Warning Resources'), fixed: false },
+      { id: 'device.critical', label: t('Critical Resources'), fixed: false },
+      { id: 'device.resourceUnavailable', label: t('Maintenance Resources'), fixed: false },
+    ],
+    [t]
+  );
+
+  const { columns, defaultColumns, selectedAccessors, handleSaveTableSettings, storageError } = useTableSettings(
+    columnDefinitions,
+    defaultAccessors,
+    'cxl-switch-list.cxl-switch-list'
+  );
 
   const items = [{ title: t('Resource Management') }, { title: t('CXL Switches') }];
 
   /** Custom hook for DataTable */
-  const { records, columns } = useColumnsAndRecords(formattedData, selectedAccessors);
+  const { records, columns: tableColumns } = useColumnsAndRecords(formattedData, selectedAccessors);
 
   return (
     <Stack gap='xl'>
       <PageHeader pageTitle={t('CXL Switches')} items={items} mutate={mutate} loading={loading} />
       {error && <MessageBox type='error' title={error.message} message={error.response?.data.message || ''} />}
-      <Group align='center' wrap='nowrap' gap='xl'>
-        <Text fz='xs' style={{ flex: '0 0 auto' }}>
-          {t('Visible')}
-        </Text>
-        <Checkbox.Group value={selectedAccessors} onChange={setSelectedAccessors}>
-          <Group>
-            <Checkbox value='id' label='ID' disabled />
-            <Checkbox value='device.connected' label={t('Resources.number')} />
-            <Checkbox value='device.unallocated' label={t('Unallocated Resources')} />
-            <Checkbox value='device.disabled' label={t('Disabled Resources')} />
-            <Checkbox value='device.warning' label={t('Warning Resources')} />
-            <Checkbox value='device.critical' label={t('Critical Resources')} />
-            <Checkbox value='device.resourceUnavailable' label={t('Excluded Resources')} />
-          </Group>
-        </Checkbox.Group>
-      </Group>
+      {storageError && <MessageBox type='error' title={storageError.message} message='' />}
 
-      <CustomDataTable records={records} columns={columns} loading={loading} defaultSortColumn='id' />
+      <CustomDataTable
+        records={records}
+        columns={tableColumns}
+        loading={loading}
+        defaultSortColumn='id'
+        storeColumnsKey='cxl-switch-list.cxl-switch-list'
+        showSettingsButton={true}
+        tableName={t('CXL Switches')}
+        settingsColumns={columns}
+        defaultColumns={defaultColumns}
+        onSaveTableSettings={handleSaveTableSettings}
+      />
     </Stack>
   );
 };

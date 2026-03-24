@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,7 @@
  * under the License.
  */
 
-import { Group } from '@mantine/core';
+import { Box, Group } from '@mantine/core';
 import { DataTableColumn } from 'mantine-datatable';
 import { useTranslations } from 'next-intl';
 
@@ -59,6 +59,7 @@ export const useColumns = (
         />
       ),
       filtering: cxlSwitchFilter.query.id !== '',
+      noWrap: true,
     },
     {
       accessor: 'device.connected',
@@ -67,7 +68,7 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.connected'),
       render: ({ id, device }) => {
         return device.connected ? (
-          <PageLink title={t('Resources.list')} path={'/cdim/res-resource-list'} query={{ cxlSwitchId: id }} key={id}>
+          <PageLink title={t('Resources.list')} path={'/cdim/res-resource-list'} query={{ cxlSwitch: id }} key={id}>
             {device.connected}
           </PageLink>
         ) : (
@@ -94,7 +95,7 @@ export const useColumns = (
           <PageLink
             title={t('Resources.list')}
             path={'/cdim/res-resource-list'}
-            query={{ cxlSwitchId: id, allocatednode: 'Unallocated' }}
+            query={{ cxlSwitch: id, allocatednode: 'Unallocated' }}
             key={id}
           >
             {device.unallocated}
@@ -120,20 +121,24 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.disabled'),
       render: ({ id, device }) => {
         return device.disabled ? (
-          <Group>
-            {StateToIconForNode(device.disabled)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <StateToIconForNode disabledResources={device.disabled} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
-              query={{ cxlSwitchId: id, state: 'Disabled' }}
+              query={{ cxlSwitch: id, state: 'Disabled' }}
               key={id}
             >
               {device.disabled.toString()}
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {StateToIconForNode(device.disabled)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <StateToIconForNode disabledResources={device.disabled} />
+            </Box>
             {device.disabled.toString()}
           </Group>
         );
@@ -155,20 +160,24 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.warning'),
       render: ({ id, device }) => {
         return device.warning ? (
-          <Group>
-            {HealthToIconForNodeWarning(device.warning)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeWarning warningNumber={device.warning} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
-              query={{ cxlSwitchId: id, health: 'Warning' }}
+              query={{ cxlSwitch: id, health: 'Warning' }}
               key={id}
             >
               {device.warning.toString()}
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {HealthToIconForNodeWarning(device.warning)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeWarning warningNumber={device.warning} />
+            </Box>
             {device.warning.toString()}
           </Group>
         );
@@ -190,20 +199,24 @@ export const useColumns = (
       hidden: !selectedAccessors.includes('device.critical'),
       render: ({ id, device }) => {
         return device.critical ? (
-          <Group>
-            {HealthToIconForNodeCritical(device.critical)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeCritical criticalNumber={device.critical} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
-              query={{ cxlSwitchId: id, health: 'Critical' }}
+              query={{ cxlSwitch: id, health: 'Critical' }}
               key={id}
             >
               {device.critical.toString()}
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {HealthToIconForNodeCritical(device.critical)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <HealthToIconForNodeCritical criticalNumber={device.critical} />
+            </Box>
             {device.critical.toString()}
           </Group>
         );
@@ -220,32 +233,36 @@ export const useColumns = (
     },
     {
       accessor: 'device.resourceUnavailable',
-      title: t('Excluded Resources'),
+      title: t('Maintenance Resources'),
       sortable: true,
       hidden: !selectedAccessors.includes('device.resourceUnavailable'),
       render: ({ id, device }) => {
         return device.resourceUnavailable ? (
-          <Group>
-            {AvailableToIconForNode(device.resourceUnavailable)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <AvailableToIconForNode unavailableNumber={device.resourceUnavailable} />
+            </Box>
             <PageLink
               title={t('Resources.list')}
               path={'/cdim/res-resource-list'}
-              query={{ cxlSwitchId: id, resourceAvailable: 'Unavailable' }}
+              query={{ cxlSwitch: id, resourceAvailable: 'Unavailable' }}
               key={id}
             >
               {device.resourceUnavailable.toString()}
             </PageLink>
           </Group>
         ) : (
-          <Group>
-            {AvailableToIconForNode(device.resourceUnavailable)}
+          <Group gap={5} wrap='nowrap'>
+            <Box style={{ flex: '0 0 auto', lineHeight: 0 }}>
+              <AvailableToIconForNode unavailableNumber={device.resourceUnavailable} />
+            </Box>
             {device.resourceUnavailable.toString()}
           </Group>
         );
       },
       filter: (
         <MultiSelectForTableFilter
-          label={t('Excluded Resources')}
+          label={t('Maintenance Resources')}
           options={cxlSwitchFilter.selectOptions.number}
           value={cxlSwitchFilter.query.unavailable}
           setValue={(value: string[]) => cxlSwitchFilter.setQuery.unavailable(value as NumberOptionValue[])}

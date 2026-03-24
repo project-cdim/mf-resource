@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -32,7 +32,7 @@ const props = {
 };
 
 const query: ResourceListQuery = {
-  cxlSwitchId: ['id1', 'id2', 'id3'],
+  cxlSwitch: ['id1', 'id2', 'id3'],
   type: ['Accelerator', 'CPU', 'memory'],
   allocatednode: ['allocatednode1', 'allocatednode2', 'allocatednode3'],
   state: ['Enabled', 'Disabled', 'InTest'],

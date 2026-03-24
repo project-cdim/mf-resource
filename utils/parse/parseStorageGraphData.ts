@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -34,7 +34,7 @@ export const parseStorageGraphData = (
     used: usedValue !== undefined ? parseInt(usedValue) : undefined,
     allocated:
       data?.resources
-        .filter((resource) => resource.device.type === 'storage' && resource.nodeIDs.length)
+        .filter((resource) => resource.device.type === 'storage' && resource.nodeIDs.length > 0)
         .reduce((acc, resource) => acc + (resource.device.driveCapacityBytes ?? 0), 0) ?? undefined,
     overall:
       data?.resources

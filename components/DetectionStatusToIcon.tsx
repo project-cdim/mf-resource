@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -17,14 +17,21 @@
 import { useTranslations } from 'next-intl';
 
 import { IconWithInfo } from '@/shared-modules/components';
-import { JSX } from 'react';
+
+/**
+ * Props for DetectionStatusToIcon component.
+ */
+export type DetectionStatusToIconProps = {
+  detected: boolean | undefined;
+};
 
 /**
  * Returns an icon based on the detection status.
- * @param detected - The detection status boolean
- * @returns JSX.Element containing the appropriate icon for the detection status
+ * @param props - Component props.
+ * @param props.detected - The detection status boolean.
+ * @returns JSX.Element containing the appropriate icon for the detection status.
  */
-export const DetectionStatusToIcon = (detected: boolean | undefined): JSX.Element | null => {
+export const DetectionStatusToIcon = ({ detected }: DetectionStatusToIconProps) => {
   const t = useTranslations();
 
   if (detected === undefined) return null;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -29,7 +29,6 @@ import NodeDetail from '@/app/[lng]/node-detail/page';
 import { dummyNodeDetail } from '@/utils/dummy-data/node-detail/nodes';
 
 const resData = {
-  exampleNode1: 'node10101',
   id: 'res10101',
   resources: [
     {
@@ -45,6 +44,22 @@ const resData = {
         type: 'CPU',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -59,6 +74,22 @@ const resData = {
         type: 'memory',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -73,6 +104,22 @@ const resData = {
         type: 'virtualMedia',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -87,12 +134,27 @@ const resData = {
         type: 'storage',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
     },
   ],
 };
 
 const resData2 = {
-  exampleNode1: 'node10101',
   id: 'res10101',
   resources: [
     {
@@ -108,6 +170,22 @@ const resData2 = {
         type: 'CPU',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -122,6 +200,22 @@ const resData2 = {
         type: 'memory',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: false,
+          },
+        },
+      },
     },
     {
       annotation: {
@@ -136,6 +230,22 @@ const resData2 = {
         type: 'virtualMedia',
       },
       resourceGroupIDs: [],
+      detected: true,
+      physicalLocation: {
+        rack: {
+          id: '00000000-0000-0000-0000-000000000111',
+          name: 'rack001',
+          chassis: { id: 'ch1', name: 'chassis001' },
+        },
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+        },
+      },
     },
   ],
 };
@@ -271,7 +381,7 @@ describe('Node Detail', () => {
   });
   test('It is displayed that it is out of the scope of resource number design', () => {
     render(<NodeDetail />);
-    const resourceUnavailableCount = screen.getByText('Excluded from design').nextSibling;
+    const resourceUnavailableCount = screen.getByText('Under Maintenance').nextSibling;
     expect(resourceUnavailableCount).toHaveTextContent(
       resData.resources.filter((item) => item.annotation.available === false).length.toString()
     );
@@ -509,7 +619,7 @@ describe('Node detail color check', () => {
     expect(warningCard).toHaveClass(colorMap['warning']);
     const criticalCard = screen.getByText('Critical').closest('div');
     expect(criticalCard).toHaveClass(colorMap['critical']);
-    const excludedCard = screen.getByText('Excluded from design').closest('div');
+    const excludedCard = screen.getByText('Under Maintenance').closest('div');
     expect(excludedCard).toHaveClass(colorMap['excluded']);
   });
 });
@@ -638,5 +748,271 @@ describe('Node Detail with special metric date range cases', () => {
 
     // Verify the component renders without crashing
     expect(screen.getByText('Node ID')).toBeInTheDocument();
+  });
+});
+
+describe('Node Detail with graph error', () => {
+  beforeEach(() => {
+    // Execute before each test
+    jest.clearAllMocks();
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      let error = null;
+      if (typeof key === 'string') {
+        data = resData;
+      } else {
+        error = {
+          message: 'Graph error occurred',
+        };
+      }
+
+      return {
+        data: data || null,
+        error: error,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+    (useIdFromQuery as jest.Mock).mockReturnValue('res10101');
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      data: [],
+      rgError: undefined,
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
+  });
+
+  test('When the graph data returns error, error message is displayed', () => {
+    render(<NodeDetail />);
+    const alertDialogs = screen.queryAllByRole('alert');
+    expect(alertDialogs.length).toBeGreaterThan(0);
+    const graphErrorAlert = alertDialogs.find((alert) => {
+      const title = alert?.querySelector('span') as HTMLSpanElement;
+      return title?.textContent === 'Graph error occurred';
+    });
+    expect(graphErrorAlert).toBeInTheDocument();
+  });
+});
+
+describe('Node Detail with power state translation', () => {
+  beforeEach(() => {
+    // Execute before each test
+    jest.clearAllMocks();
+    (useIdFromQuery as jest.Mock).mockReturnValue('res10101');
+  });
+
+  test('Power state displays translated value when t.has returns true', () => {
+    const dataWithPowerState = {
+      ...resData,
+      resources: [
+        {
+          ...resData.resources[0],
+          device: {
+            ...resData.resources[0].device,
+            type: 'CPU',
+            powerState: 'On',
+          },
+        },
+      ],
+    };
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      if (typeof key === 'string') {
+        data = dataWithPowerState;
+      }
+      return {
+        data: data || dummyGraphData,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+
+    render(<NodeDetail />);
+    expect(screen.getByText('Power State')).toBeInTheDocument();
+  });
+
+  test('Power state displays untranslated value when t.has returns false', () => {
+    const dataWithUnknownPowerState = {
+      ...resData,
+      resources: [
+        {
+          ...resData.resources[0],
+          device: {
+            ...resData.resources[0].device,
+            type: 'CPU',
+            powerState: 'UnknownPowerState' as any,
+          },
+        },
+      ],
+    };
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      if (typeof key === 'string') {
+        data = dataWithUnknownPowerState;
+      }
+      return {
+        data: data || dummyGraphData,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+
+    render(<NodeDetail />);
+    expect(screen.getByText('Power State')).toBeInTheDocument();
+    expect(screen.getByText('UnknownPowerState')).toBeInTheDocument();
+  });
+
+  test('Power state displays undefined when there is no CPU resource', () => {
+    // Mock useTranslations to return t.has as false for undefined
+    const mockT = jest.fn((str: string) => str) as any;
+    mockT.has = jest.fn((key: any) => key !== undefined);
+    jest.spyOn(require('next-intl'), 'useTranslations').mockReturnValue(mockT);
+
+    const dataWithoutCPU = {
+      ...resData,
+      resources: [
+        {
+          ...resData.resources[0],
+          device: {
+            ...resData.resources[0].device,
+            type: 'memory',
+          },
+        },
+      ],
+    };
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      if (typeof key === 'string') {
+        data = dataWithoutCPU;
+      }
+      return {
+        data: data || dummyGraphData,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+
+    render(<NodeDetail />);
+    expect(screen.getByText('Power State')).toBeInTheDocument();
+    // Verify t.has was called with undefined
+    expect(mockT.has).toHaveBeenCalledWith(undefined);
+  });
+});
+
+describe('Node Detail with zero resource counts', () => {
+  beforeEach(() => {
+    // Execute before each test
+    jest.clearAllMocks();
+    (useIdFromQuery as jest.Mock).mockReturnValue('res10101');
+  });
+
+  test('NumberOrVolumeCard does not apply className when value is 0', () => {
+    const dataWithZeroCounts = {
+      ...resData,
+      resources: [
+        {
+          ...resData.resources[0],
+          device: {
+            ...resData.resources[0].device,
+            status: {
+              health: 'OK',
+              state: 'Enabled',
+            },
+            powerState: 'On',
+          },
+        },
+      ],
+    };
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      if (typeof key === 'string') {
+        data = dataWithZeroCounts;
+      }
+      return {
+        data: data || dummyGraphData,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+
+    render(<NodeDetail />);
+    const disabledCard = screen.getByText('Disabled').closest('div');
+    const warningCard = screen.getByText('Warning').closest('div');
+    const criticalCard = screen.getByText('Critical').closest('div');
+    const excludedCard = screen.getByText('Under Maintenance').closest('div');
+    const powerOffCard = screen.getByText('Power Off').closest('div');
+
+    // Verify that no color class is applied when count is 0
+    expect(disabledCard).not.toHaveClass('red');
+    expect(warningCard).not.toHaveClass('yellow');
+    expect(criticalCard).not.toHaveClass('red');
+    expect(excludedCard).not.toHaveClass('gray');
+    expect(powerOffCard).not.toHaveClass('gray');
+  });
+
+  test('NumberOrVolumeCard does not apply className when value is undefined', () => {
+    (useSWRImmutable as jest.Mock).mockImplementation(() => {
+      return {
+        data: null,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+
+    render(<NodeDetail />);
+    const disabledCard = screen.getByText('Disabled').closest('div');
+    const warningCard = screen.getByText('Warning').closest('div');
+    const criticalCard = screen.getByText('Critical').closest('div');
+    const excludedCard = screen.getByText('Under Maintenance').closest('div');
+    const powerOffCard = screen.getByText('Power Off').closest('div');
+
+    // Verify that no color class is applied when count is undefined
+    expect(disabledCard).not.toHaveClass('red');
+    expect(warningCard).not.toHaveClass('yellow');
+    expect(criticalCard).not.toHaveClass('red');
+    expect(excludedCard).not.toHaveClass('gray');
+    expect(powerOffCard).not.toHaveClass('gray');
+  });
+
+  test('NumberOrVolumeCard applies className when value is greater than 0', () => {
+    const dataWithPowerOffResources = {
+      ...resData,
+      resources: [
+        {
+          ...resData.resources[0],
+          device: {
+            ...resData.resources[0].device,
+            status: {
+              health: 'OK',
+              state: 'Enabled',
+            },
+            powerState: 'Off',
+          },
+        },
+      ],
+    };
+    (useSWRImmutable as jest.Mock).mockImplementation((key: any) => {
+      let data = null;
+      if (typeof key === 'string') {
+        data = dataWithPowerOffResources;
+      }
+      return {
+        data: data || dummyGraphData,
+        error: null,
+        mutate: jest.fn(),
+        isValidating: false,
+      };
+    });
+
+    render(<NodeDetail />);
+    const powerOffCard = screen.getByText('Power Off').closest('div');
+
+    // Verify that color class is applied when count is greater than 0
+    expect(powerOffCard).toHaveClass('gray');
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -118,7 +118,7 @@ describe('useColumns', () => {
     expect(columns[5].filtering).toBeTruthy();
     // resourceUnavailable column
     expect(columns[6].accessor).toBe('device.resourceUnavailable');
-    expect(columns[6].title).toBe('Excluded Resources');
+    expect(columns[6].title).toBe('Maintenance Resources');
     expect(columns[6].sortable).toBeTruthy();
     expect(columns[6].hidden).toBeFalsy();
     expect(columns[6].filtering).toBeTruthy();
@@ -165,7 +165,7 @@ describe('useColumns', () => {
     expect(columns[5].filtering).toBeTruthy();
     // connected column
     expect(columns[6].accessor).toBe('device.resourceUnavailable');
-    expect(columns[6].title).toBe('Excluded Resources');
+    expect(columns[6].title).toBe('Maintenance Resources');
     expect(columns[6].sortable).toBeTruthy();
     expect(columns[6].hidden).toBeTruthy();
     expect(columns[6].filtering).toBeTruthy();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,17 +14,29 @@
  * under the License.
  */
 
-import { APIDeviceAvailable, APIDeviceHealth, APIDeviceState, APIDeviceType } from '@/shared-modules/types';
+import {
+  APIDeviceAvailable,
+  APIDeviceHealth,
+  APPDeviceOverallStatus,
+  APIDevicePowerState,
+  APIDeviceState,
+  APIDeviceType,
+  APIresource,
+} from '@/shared-modules/types';
 
 /** Type definition for the resource list table */
 export type APPResource = {
   id: string;
   type: APIDeviceType;
+  status: APPDeviceOverallStatus;
+  powerState: APIDevicePowerState;
   health: APIDeviceHealth;
   state: APIDeviceState;
   detected: boolean;
   resourceGroups: { id: string; name: string }[];
-  cxlSwitchId: string;
+  placement?: APIresource['physicalLocation'];
+  cxlSwitch: string[];
   nodeIDs: string[] | [];
+  composite?: string;
   resourceAvailable: APIDeviceAvailable;
 };

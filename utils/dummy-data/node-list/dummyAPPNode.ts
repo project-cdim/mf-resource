@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -22,6 +22,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node001',
     device: {
       connected: 40,
+      poweroff: 1,
       disabled: 4,
       warning: 3,
       critical: 2,
@@ -32,6 +33,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node002',
     device: {
       connected: 20,
+      poweroff: 2,
       disabled: 1,
       warning: 2,
       critical: 3,
@@ -42,6 +44,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node003',
     device: {
       connected: 30,
+      poweroff: 0,
       disabled: 0,
       warning: 1,
       critical: 0,
@@ -52,6 +55,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node004',
     device: {
       connected: 88,
+      poweroff: 5,
       disabled: 3,
       warning: 0,
       critical: 4,
@@ -62,6 +66,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node005',
     device: {
       connected: 0,
+      poweroff: 0,
       disabled: 0,
       warning: 0,
       critical: 0,
@@ -72,6 +77,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node006',
     device: {
       connected: 55,
+      poweroff: 3,
       disabled: 0,
       warning: 0,
       critical: 11,
@@ -82,6 +88,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node007',
     device: {
       connected: 66,
+      poweroff: 0,
       disabled: 11,
       warning: 0,
       critical: 0,
@@ -92,6 +99,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node008',
     device: {
       connected: 33,
+      poweroff: 1,
       disabled: 0,
       warning: 0,
       critical: 0,
@@ -102,6 +110,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node009',
     device: {
       connected: 40,
+      poweroff: 2,
       disabled: 0,
       warning: 1,
       critical: 0,
@@ -112,6 +121,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node010',
     device: {
       connected: 40,
+      poweroff: 0,
       disabled: 0,
       warning: 0,
       critical: 1,
@@ -122,6 +132,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node011',
     device: {
       connected: 40,
+      poweroff: 1,
       disabled: 1,
       warning: 0,
       critical: 0,
@@ -132,6 +143,7 @@ export const dummyAPPNode: APPNode[] = [
     id: 'node012',
     device: {
       connected: 40,
+      poweroff: 0,
       disabled: 0,
       warning: 0,
       critical: 0,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -20,7 +20,6 @@ import { render } from '@testing-library/react';
 import { IconWithInfo } from '@/shared-modules/components';
 
 import { HealthToIcon, HealthToIconForNodeCritical, HealthToIconForNodeWarning } from '@/components';
-import { JSX } from 'react';
 
 jest.mock('@/shared-modules/components', () => ({
   ...jest.requireActual('@/shared-modules/components'),
@@ -35,8 +34,7 @@ describe('HealthToIcon', () => {
 
   test('When health is OK, the label is in English as "Resource is working properly"', () => {
     const health = 'OK';
-    const HealthIconWithInfo = HealthToIcon(health);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIcon health={health} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -45,8 +43,7 @@ describe('HealthToIcon', () => {
 
   test('When health is Warning, the label is in English as "A condition requires attention"', () => {
     const health = 'Warning';
-    const HealthIconWithInfo = HealthToIcon(health);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIcon health={health} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -55,8 +52,7 @@ describe('HealthToIcon', () => {
 
   test('When health is Critical, the label is in English as "A critical condition exists that requires immediate attention"', () => {
     const health = 'Critical';
-    const HealthIconWithInfo = HealthToIcon(health);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIcon health={health} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -65,24 +61,22 @@ describe('HealthToIcon', () => {
 
   test('When the status is undefined, there is no icon', () => {
     const health = 'hogehoge';
-    const HealthIconWithInfo = HealthToIcon(health);
-    render(HealthIconWithInfo as JSX.Element);
+    const { container } = render(<HealthToIcon health={health} />);
 
-    expect(HealthIconWithInfo).toBeNull();
+    expect(container.firstChild).toBeNull();
   });
 
   test('When the state is undefined, there is no icon', () => {
     const state = undefined;
-    const HealthIconWithInfo = HealthToIcon(state);
-    expect(HealthIconWithInfo).toBeNull();
+    const { container } = render(<HealthToIcon health={state} />);
+    expect(container.firstChild).toBeNull();
   });
 });
 
 describe('HealthToIconForNodeWarning', () => {
   test('When the number of resources in a state requiring attention is 0, the label is in English as "All resources are working properly"', () => {
     const warning_number = 0;
-    const HealthIconWithInfo = HealthToIconForNodeWarning(warning_number);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIconForNodeWarning warningNumber={warning_number} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -91,8 +85,7 @@ describe('HealthToIconForNodeWarning', () => {
 
   test('When the number of resources in a state requiring attention is 1 or more, the label is in English as "A resource exists that requires attention"', () => {
     const warning_number = 1;
-    const HealthIconWithInfo = HealthToIconForNodeWarning(warning_number);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIconForNodeWarning warningNumber={warning_number} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -103,8 +96,7 @@ describe('HealthToIconForNodeWarning', () => {
 describe('HealthToIconForNodeCritical', () => {
   test('When the number of resources in a critical state is 0, the label is in English as "All resources are working properly"', () => {
     const critical_number = 0;
-    const HealthIconWithInfo = HealthToIconForNodeCritical(critical_number);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIconForNodeCritical criticalNumber={critical_number} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -113,8 +105,7 @@ describe('HealthToIconForNodeCritical', () => {
 
   test('When the number of resources in a critical state is 1 or more, the label is in English as "A resource exists in a critical condition that requires immediate attention"', () => {
     const critical_number = 1;
-    const HealthIconWithInfo = HealthToIconForNodeCritical(critical_number);
-    render(HealthIconWithInfo as JSX.Element);
+    render(<HealthToIconForNodeCritical criticalNumber={critical_number} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];

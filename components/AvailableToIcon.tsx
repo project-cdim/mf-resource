@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -19,31 +19,46 @@ import { useTranslations } from 'next-intl';
 import { IconWithInfo } from '@/shared-modules/components';
 
 /**
+ * Props for AvailableToIcon component.
+ */
+export type AvailableToIconProps = {
+  resourceAvailable: string;
+};
+
+/**
  * Returns an icon based on the availability of a resource.
- * @param resourceAvailable - The availability of the resource.
+ * @param props - Component props.
+ * @param props.resourceAvailable - The availability of the resource.
  * @returns The icon component based on the availability.
  */
-export const AvailableToIcon = (resourceAvailable: string) => {
+export const AvailableToIcon = ({ resourceAvailable }: AvailableToIconProps) => {
   const t = useTranslations();
   return resourceAvailable === 'Available' ? (
-    <IconWithInfo type='check' label={t('Resource will be the subject of the subsequent design')} />
+    <></>
   ) : (
-    <IconWithInfo type='ban' label={t('Resource will be excluded from subsequent designs')} />
+    <IconWithInfo type='ban' label={t('This resource is under maintenance')} />
   );
 };
 
 /**
+ * Props for AvailableToIconForNode component.
+ */
+export type AvailableToIconForNodeProps = {
+  unavailableNumber: number;
+};
+
+/**
  * Returns an icon component based on the number of unavailable resources.
- *
- * @param unavailable_number - The number of unavailable resources.
+ * @param props - Component props.
+ * @param props.unavailableNumber - The number of unavailable resources.
  * @returns The icon component.
  */
-export const AvailableToIconForNode = (unavailable_number: number) => {
+export const AvailableToIconForNode = ({ unavailableNumber }: AvailableToIconForNodeProps) => {
   const t = useTranslations();
 
-  return unavailable_number > 0 ? (
-    <IconWithInfo type='ban' label={t('Some resources will be excluded from subsequent designs')} />
+  return unavailableNumber > 0 ? (
+    <IconWithInfo type='ban' label={t('Some resources are under maintenance')} />
   ) : (
-    <IconWithInfo type='check' label={t('All resources are subject to subsequent designs')} />
+    <IconWithInfo type='check' label={t('All resources are available')} />
   );
 };

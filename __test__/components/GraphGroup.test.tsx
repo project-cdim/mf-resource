@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -60,13 +60,14 @@ const graphViewProps: GraphViewProps = {
   valueFormatter: () => `formatter`,
   link: '',
   query: {
-    cxlSwitchId: ['cxlSwitchId1', 'cxlSwitchId2'],
+    cxlSwitch: ['cxlSwitchId1', 'cxlSwitchId2'],
     type: ['CPU'],
     allocatednode: ['allocatednode1', 'allocatednode2'],
     state: ['Enabled'],
     health: ['OK'],
     resourceAvailable: ['Available', 'Unavailable'],
   },
+  dateRange: [new Date(), new Date()],
 };
 
 const histogramViewProps: HistogramViewProps = {
@@ -113,6 +114,8 @@ describe('GraphGroup', () => {
         { type: 'histogram', props: histogramViewProps },
         { type: 'storage', props: storageGraphViewProps },
       ],
+      dateRange: [new Date(), new Date()],
+      setDateRange: jest.fn(),
     };
     render(<GraphGroup {...props} />);
     const title = screen.getByText(props.title);
@@ -127,6 +130,8 @@ describe('GraphGroup', () => {
         { type: 'histogram', props: histogramViewProps },
         { type: 'storage', props: storageGraphViewProps },
       ],
+      dateRange: [new Date(), new Date()],
+      setDateRange: jest.fn(),
     };
     render(<GraphGroup {...props} />);
     expect(mockGraphView).toHaveBeenCalled();
@@ -145,6 +150,8 @@ describe('GraphGroup', () => {
         { type: 'histogram', props: histogramViewProps },
         { type: 'storage', props: storageGraphViewProps },
       ],
+      dateRange: [new Date(), new Date()],
+      setDateRange: jest.fn(),
     };
     render(<GraphGroup {...props} />);
     expect(mockGraphView).toHaveBeenCalledTimes(2);
@@ -155,6 +162,8 @@ describe('GraphGroup', () => {
     const props: GraphGroupProps = {
       title: 'Group Title',
       items: [],
+      dateRange: [new Date(), new Date()],
+      setDateRange: jest.fn(),
     };
     render(<GraphGroup {...props} />);
     const title = screen.getByText(props.title);
@@ -168,11 +177,12 @@ describe('GraphGroup', () => {
     const props: GraphGroupProps = {
       title: 'Group Title',
       items: [
-        { type: 'graphView', props: { ...graphViewProps, unit: 'Wh' }, isFullWidth: true },
+        { type: 'graphView', props: graphViewProps, isFullWidth: true },
         { type: 'histogram', props: histogramViewProps },
         { type: 'storage', props: storageGraphViewProps },
       ],
-      loading: false,
+      dateRange: [new Date(), new Date()],
+      setDateRange: jest.fn(),
     };
     render(<GraphGroup {...props} />);
     expect(screen.getAllByTestId('gridcol')[0].getAttribute('title')).toBe('12');
@@ -189,6 +199,8 @@ describe('GraphGroup', () => {
         { type: 'storage', props: storageGraphViewProps },
       ],
       noHeader: true,
+      dateRange: [new Date(), new Date()],
+      setDateRange: jest.fn(),
     };
     render(<GraphGroup {...props} />);
     const title = screen.queryByRole('heading', { level: 2, name: props.title });

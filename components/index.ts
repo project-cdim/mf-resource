@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -19,6 +19,8 @@ export * from './AllocatedView';
 export * from './AllocatedViewAll';
 export * from './AvailableButton';
 export * from './AvailableToIcon';
+export * from './ChassisDetail';
+export * from './CompositeResourceDetailSummary';
 export * from './DisplayPeriodPicker';
 export * from './GraphGroup';
 export * from './HealthToIcon';
@@ -26,10 +28,13 @@ export * from './HistogramView';
 export * from './JsonTable';
 export * from './NumberGroup';
 export * from './NumberView';
+export * from './PowerStateToIcon';
+export * from './RackLayout';
 export * from './ResourceDetailPerformance';
 export * from './ResourceDetailSummary';
 export * from './ResourceListTable';
 export * from './StateToIcon';
+export * from './StatusToIcon';
 export * from './StorageGraphView';
 export * from './TabList';
 export * from './TabPanel';

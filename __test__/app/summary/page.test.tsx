@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -25,7 +25,7 @@ import * as hooks from '@/utils/hooks/useResourceSummary';
 import * as hooksRange from '@/utils/hooks/useSummaryRangeGraph';
 import * as hooksSingle from '@/utils/hooks/useSummarySingleGraph';
 import * as hooksTab from '@/utils/hooks/useTabFromQuery';
-import { dummyResourcesDetail } from '@/utils/dummy-data/index/resources';
+import { dummyAPIresources } from '@/utils/dummy-data/resource-list/dummyAPIresources';
 
 jest.mock('@/shared-modules/components', () => ({
   ...jest.requireActual('@/shared-modules/components'),
@@ -119,7 +119,7 @@ describe('Summary Page', () => {
     });
 
     test('renders with resource data', () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail });
+      setupMocks({ resourceSummaryData: dummyAPIresources });
       render(<Home />);
       expect(TabList).toHaveBeenCalled();
       expect(TabPanel).toHaveBeenCalled();
@@ -141,27 +141,27 @@ describe('Summary Page', () => {
       expect(TabList).toHaveBeenCalled();
     });
     test('tabFromQuery sets active tab if valid', () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail, tabFromQuery: 'all' });
+      setupMocks({ resourceSummaryData: dummyAPIresources, tabFromQuery: 'all' });
       render(<Home />);
       expect(TabList).toHaveBeenCalled();
     });
     test('tabFromQuery does not set active tab if not in tab list', () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail, tabFromQuery: 'notfound' });
+      setupMocks({ resourceSummaryData: dummyAPIresources, tabFromQuery: 'notfound' });
       render(<Home />);
       expect(TabList).toHaveBeenCalled();
     });
     test('tabFromQuery is undefined', () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail, tabFromQuery: undefined });
+      setupMocks({ resourceSummaryData: dummyAPIresources, tabFromQuery: undefined });
       render(<Home />);
       expect(TabList).toHaveBeenCalled();
     });
     test('date range is set on mount', () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail });
+      setupMocks({ resourceSummaryData: dummyAPIresources });
       render(<Home />);
       // No error thrown means date logic is covered
     });
     test('Tabs onChange triggers activeTab change (debounce)', async () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail });
+      setupMocks({ resourceSummaryData: dummyAPIresources });
       render(<Home />);
       await screen.findByTestId('tab-list');
       const onChange = (global as any).__tabsOnChange;
@@ -170,7 +170,7 @@ describe('Summary Page', () => {
       }
     });
     test('Tabs onChange with null triggers summary tab', async () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail });
+      setupMocks({ resourceSummaryData: dummyAPIresources });
       render(<Home />);
       await screen.findByTestId('tab-list');
       const onChange = (global as any).__tabsOnChange;
@@ -179,7 +179,7 @@ describe('Summary Page', () => {
       }
     });
     test('activeTab is updated by debounced onChange of Tabs', () => {
-      setupMocks({ resourceSummaryData: dummyResourcesDetail });
+      setupMocks({ resourceSummaryData: dummyAPIresources });
       jest.useFakeTimers();
       render(<Home />);
       act(() => {
@@ -196,7 +196,7 @@ describe('Summary Page', () => {
   });
 
   describe('handleTabChange logic', () => {
-    // To directly test the logic of HomeMain, we extract it as an external function
+    // To directly test the logic of HomeMain, we extract it as an external function.
     function handleTabChangeLogic(setActiveTab: (v: string) => void, value: string | null) {
       setActiveTab(value || 'summary');
     }
@@ -271,7 +271,7 @@ describe('Summary Page', () => {
         singleGraphError: { message: 'singleError' },
       });
       render(<Home />);
-      // The MessageBox component is called three times
+      // MessageBox is called 3 times
       expect((MessageBox as jest.Mock).mock.calls.length).toBeGreaterThanOrEqual(3);
     });
     test('Messages handles undefined error.message and error.response.data.message', () => {
@@ -296,7 +296,7 @@ describe('Summary Page', () => {
       expect(TabPanel).toHaveBeenCalled();
       expect(TabPanelAll).toHaveBeenCalled();
     });
-    test('sortByDeviceType returns empty if no types', () => {
+    test('arrangeDeviceType returns empty if no types', () => {
       setupMocks({ resourceSummaryData: { count: 0, resources: [] } });
       render(<Home />);
       expect(TabList).toHaveBeenCalled();

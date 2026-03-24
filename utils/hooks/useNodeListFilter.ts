@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -28,6 +28,7 @@ export type NumberOptionValue = 'notExist' | 'exist';
 type APPNodeQuery = {
   id: string;
   connected: NumberOptionValue[];
+  poweroff: NumberOptionValue[];
   disabled: NumberOptionValue[];
   warning: NumberOptionValue[];
   critical: NumberOptionValue[];
@@ -36,6 +37,7 @@ type APPNodeQuery = {
 type APPNodeSetQuery = {
   id: Dispatch<SetStateAction<string>>;
   connected: Dispatch<SetStateAction<NumberOptionValue[]>>;
+  poweroff: Dispatch<SetStateAction<NumberOptionValue[]>>;
   disabled: Dispatch<SetStateAction<NumberOptionValue[]>>;
   warning: Dispatch<SetStateAction<NumberOptionValue[]>>;
   critical: Dispatch<SetStateAction<NumberOptionValue[]>>;
@@ -66,6 +68,7 @@ export const useNodeListFilter = (records: APPNode[]): NodeListFilter => {
   const [idQuery, setIdQuery] = useState('');
   const [debouncedIdQuery] = useDebouncedValue(idQuery, 200);
   const [connectedQuery, setConnectedQuery] = useState<NumberOptionValue[]>([]);
+  const [poweroffQuery, setPoweroffQuery] = useState<NumberOptionValue[]>([]);
   const [disabledQuery, setDisabledQuery] = useState<NumberOptionValue[]>([]);
   const [warningQuery, setWarningQuery] = useState<NumberOptionValue[]>([]);
   const [criticalQuery, setCriticalQuery] = useState<NumberOptionValue[]>([]);
@@ -80,6 +83,7 @@ export const useNodeListFilter = (records: APPNode[]): NodeListFilter => {
   const queryObject = useQueryArrayObject();
   useEffect(() => {
     setConnectedQuery(queryObject.connected as NumberOptionValue[]);
+    setPoweroffQuery(queryObject.poweroff as NumberOptionValue[]);
     setDisabledQuery(queryObject.disabled as NumberOptionValue[]);
     setWarningQuery(queryObject.warning as NumberOptionValue[]);
     setCriticalQuery(queryObject.critical as NumberOptionValue[]);
@@ -91,18 +95,29 @@ export const useNodeListFilter = (records: APPNode[]): NodeListFilter => {
       (record) =>
         isAllStringIncluded(record.id, debouncedIdQuery) &&
         isExistanceSelected(record.device.connected, connectedQuery) &&
+        isExistanceSelected(record.device.poweroff, poweroffQuery) &&
         isExistanceSelected(record.device.disabled, disabledQuery) &&
         isExistanceSelected(record.device.warning, warningQuery) &&
         isExistanceSelected(record.device.critical, criticalQuery) &&
         isExistanceSelected(record.device.resourceUnavailable, unavailableQuery)
     );
-  }, [records, debouncedIdQuery, connectedQuery, disabledQuery, warningQuery, criticalQuery, unavailableQuery]);
+  }, [
+    records,
+    debouncedIdQuery,
+    connectedQuery,
+    poweroffQuery,
+    disabledQuery,
+    warningQuery,
+    criticalQuery,
+    unavailableQuery,
+  ]);
 
   return {
     filteredRecords,
     query: {
       id: idQuery,
       connected: connectedQuery,
+      poweroff: poweroffQuery,
       disabled: disabledQuery,
       warning: warningQuery,
       critical: criticalQuery,
@@ -111,6 +126,7 @@ export const useNodeListFilter = (records: APPNode[]): NodeListFilter => {
     setQuery: {
       id: setIdQuery,
       connected: setConnectedQuery,
+      poweroff: setPoweroffQuery,
       disabled: setDisabledQuery,
       warning: setWarningQuery,
       critical: setCriticalQuery,

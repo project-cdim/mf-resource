@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -28,7 +28,7 @@ import ResourceDetail from '@/app/[lng]/resource-detail/page';
 import { ResourceDetailSummary, ResourceDetailPerformance } from '@/components';
 import { useResourceGroupsData } from '@/utils/hooks/useResourceGroupsData';
 import { useGraphData } from '@/utils/hooks/resource-detail/useGraphData';
-import { dummyResourcesDetail } from '@/utils/dummy-data/index/resources';
+import { dummyAPIresources } from '@/utils/dummy-data/resource-list/dummyAPIresources';
 import {
   dummyAPIResourceGroup1,
   dummyAPIResourceGroup2,
@@ -43,7 +43,6 @@ jest.mock('swr/immutable', () => ({
 jest.mock('@/shared-modules/utils/hooks', () => ({
   ...jest.requireActual('@/shared-modules/utils/hooks'),
   useIdFromQuery: jest.fn(),
-  useMSW: jest.fn().mockReturnValue(false),
   useLoading: jest.fn(),
 }));
 
@@ -83,7 +82,7 @@ jest.mock('@/utils/hooks/resource-detail/useGraphData', () => ({
 describe('Resource Detail Page', () => {
   // Test data
   const mockResourceId = 'resTEST101';
-  const mockResource: APIresource = dummyResourcesDetail.resources[0];
+  const mockResource: APIresource = dummyAPIresources.resources[0];
   const mockResourceGroups = [dummyAPIResourceGroup1, dummyAPIResourceGroup2];
   const mockGraphData = {
     status: 'success',
@@ -269,12 +268,12 @@ describe('Resource Detail Page', () => {
   test('handles resource fetch error without response data', () => {
     const errorMessage = 'Failed to fetch resource';
 
-    // Create a mock error without a response property
+    // Create a mock error without the response property in the mock implementation
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       data: undefined,
       error: {
         message: errorMessage,
-        // No response property
+        // response: undefined
       },
       isValidating: false,
       mutate: mockMutate,
@@ -293,7 +292,7 @@ describe('Resource Detail Page', () => {
     const messageBox = screen.getByTestId('mock-message-box');
     expect(messageBox).toHaveAttribute('data-type', 'error');
     expect(messageBox).toHaveAttribute('data-title', errorMessage);
-    expect(messageBox).toHaveAttribute('data-message', '');  // should be an empty string
+    expect(messageBox).toHaveAttribute('data-message', ''); // Should be an empty string
   });
 
   test('handles resource fetch error with response but no data message', () => {
@@ -304,7 +303,7 @@ describe('Resource Detail Page', () => {
       data: undefined,
       error: {
         message: errorMessage,
-        response: {}, // no data.message
+        response: {}, // Missing data.message in response
       },
       isValidating: false,
       mutate: mockMutate,
@@ -312,7 +311,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // Check if the error message is displayed with empty string
+    // Check if the error message is displayed with an empty string for the message
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];
@@ -334,7 +333,7 @@ describe('Resource Detail Page', () => {
       data: undefined,
       error: {
         message: errorMessage,
-        response: { status: 404 }, // no data property
+        response: { status: 404 }, // Missing data property
       },
       isValidating: false,
       mutate: mockMutate,
@@ -342,7 +341,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // Check if the error message is displayed with empty string
+    // Check if the error message is displayed with an empty string for the message
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];
@@ -359,12 +358,12 @@ describe('Resource Detail Page', () => {
   test('handles resource fetch error with empty data message', () => {
     const errorMessage = 'Failed to fetch resource';
 
-    // Create an error with response.data.message as an empty string
+    // Create an error with empty data message
     (useSWRImmutable as jest.Mock).mockImplementation(() => ({
       data: undefined,
       error: {
         message: errorMessage,
-        response: { data: { message: '' } }, // empty message
+        response: { data: { message: '' } }, // Empty message
       },
       isValidating: false,
       mutate: mockMutate,
@@ -372,7 +371,7 @@ describe('Resource Detail Page', () => {
 
     render(<ResourceDetail />);
 
-    // Check if the error message is displayed with empty string
+    // Check if the error message is displayed with an empty string for the message
     const messageBoxCalls = (MessageBox as jest.Mock).mock.calls;
     const hasErrorMessage = messageBoxCalls.some((call) => {
       const props = call[0];

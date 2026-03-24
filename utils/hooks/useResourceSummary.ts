@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -29,9 +29,8 @@ import { APIresources } from '@/shared-modules/types';
  * - `isValidating`: A boolean indicating if the data is currently being revalidated.
  */
 export const useResourceSummary = () => {
-  const mswInitializing = false;
   const { data, error, isValidating } = useSWR<APIresources>(
-    !mswInitializing && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources?detail=true`
+    `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources?detail=true`
   );
   return { data, error, isValidating };
 };

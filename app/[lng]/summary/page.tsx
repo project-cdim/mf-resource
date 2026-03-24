@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { Box, Breadcrumbs, Tabs, Title } from '@mantine/core';
+import { Box, Breadcrumbs, Tabs, Title, Stack } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 import _ from 'lodash';
 import { SWRConfig } from 'swr';
@@ -26,7 +26,7 @@ import type { SWRConfiguration } from 'swr';
 
 import { MessageBox } from '@/shared-modules/components';
 import { APIDeviceType } from '@/shared-modules/types';
-import { sortByDeviceType, fetcher } from '@/shared-modules/utils';
+import { arrangeDeviceType, fetcher } from '@/shared-modules/utils';
 import { useMetricDateRange } from '@/shared-modules/utils/hooks';
 import { TabList, TabListTab, TabPanel, TabPanelAll, TabPanelAllTab, TabPanelTab } from '@/components';
 import { useResourceSummary } from '@/utils/hooks/useResourceSummary';
@@ -86,7 +86,7 @@ const Home = () => {
     if (!data || data.resources.length === 0) return;
     // Create a list of types
     const typeInData = data.resources.map((resource) => resource.device.type);
-    const typeList: APIDeviceType[] = sortByDeviceType(typeInData) as APIDeviceType[];
+    const typeList: APIDeviceType[] = arrangeDeviceType(typeInData) as APIDeviceType[];
     setDeviceTypes(typeList);
     setDeviceTypesTabList(['summary', 'all', ...typeList]);
     setDeviceTypesTabPanelAll(['all', ...typeList]);
@@ -101,15 +101,15 @@ const Home = () => {
     // Designate a position relative, because it is required by a LoadingOverlay.
     <SWRConfig value={SWR_OPTIONS}>
       <Box pos='relative'>
-        <Breadcrumbs fz='sm'>
-          {[
-            <span key='Resource Management'>{t('Resource Management')}</span>,
-            <span key='Summary'>{t('Summary')}</span>,
-          ]}
-        </Breadcrumbs>
-        <Title size='1.5rem' pt={'0.5rem'}>
-          {t('Summary')}
-        </Title>
+        <Stack gap='md'>
+          <Breadcrumbs fz='sm'>
+            {[
+              <span key='Resource Management'>{t('Resource Management')}</span>,
+              <span key='Summary'>{t('Summary')}</span>,
+            ]}
+          </Breadcrumbs>
+          <Title order={1}>{t('Summary')}</Title>
+        </Stack>
         <Messages error={error} rangeGraphError={rangeGraphError} singleGraphError={singleGraphError} />
         <Tabs value={activeTab} onChange={handleTabChange} data-testid='tabs-root'>
           {/* Tab list */}

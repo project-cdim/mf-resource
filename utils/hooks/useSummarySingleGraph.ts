@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -19,7 +19,7 @@
  */
 import useSWR from 'swr';
 import { APIPromQLSingle, APIDeviceType } from '@/shared-modules/types';
-import { fetcher } from '@/shared-modules/utils';
+import { fetcherForPromqlByPost } from '@/shared-modules/utils';
 
 /**
  * Custom React hook to fetch and return summary metrics for CPU, memory, and storage usage
@@ -33,13 +33,26 @@ import { fetcher } from '@/shared-modules/utils';
  *   - isValidating: Boolean indicating if the data is currently being validated/refetched.
  */
 export const useSummarySingleGraph = (deviceTypes: APIDeviceType[], metricEndDate: string | undefined) => {
+  // Generate PromQL queries for usage metrics
   const usageQuery = `label_replace({__name__=~".*_usageRate|memory_usedMemory",job=~".*"},"data_label","usage","","")`;
   const storageUsageQuery = `label_replace(sum({__name__=~"storage_disk_amountUsedDisk",job=~".*"}),"data_label","storage_usage","","")`;
+  // Combine queries for single API call efficiency
+  const combinedQuery = `${usageQuery} or ${storageUsageQuery}`;
+  // Create SWR key for caching
+  const swrKey =
+    deviceTypes.length !== 0
+      ? [`${process.env.NEXT_PUBLIC_URL_BE_PERFORMANCE_MANAGER}/query`, combinedQuery, metricEndDate]
+      : null;
 
   const { data, error, isValidating } = useSWR<APIPromQLSingle>(
-    deviceTypes.length !== 0 &&
-      `${process.env.NEXT_PUBLIC_URL_BE_PERFORMANCE_MANAGER}/query?query=${usageQuery} or ${storageUsageQuery}&time=${metricEndDate}`,
-    fetcher
+    swrKey,
+    ([url, query, time]: [string, string, string | undefined]) => {
+      const params = new URLSearchParams({
+        query,
+        time: time ?? '',
+      });
+      return fetcherForPromqlByPost(url, params);
+    }
   );
   return { data, error, isValidating };
 };

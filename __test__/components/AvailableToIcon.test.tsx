@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -20,7 +20,6 @@ import { render } from '@testing-library/react';
 import { IconWithInfo } from '@/shared-modules/components';
 
 import { AvailableToIcon, AvailableToIconForNode } from '@/components';
-import { JSX } from 'react';
 
 jest.mock('@/shared-modules/components', () => ({
   ...jest.requireActual('@/shared-modules/components'),
@@ -33,45 +32,39 @@ describe('AvailableToIcon', () => {
     jest.clearAllMocks();
   });
 
-  test('When available is "Available", the label is in English as "Resource will be the subject of the subsequent design"', () => {
+  test('When available is "Available", the label is empty', () => {
     const available = 'Available';
-    const AvailableIconWithInfo = AvailableToIcon(available);
-    render(AvailableIconWithInfo as JSX.Element);
+    render(<AvailableToIcon resourceAvailable={available} />);
 
-    // @ts-ignore
-    const givenProps = IconWithInfo.mock.lastCall[0];
-    expect(givenProps.label).toBe('Resource will be the subject of the subsequent design');
+    expect(IconWithInfo as jest.Mock).not.toHaveBeenCalled();
   });
 
-  test('When available is not "Available", the label is in English as "Resource will be excluded from subsequent designs"', () => {
+  test('When available is not "Available", the label is in English as "This resource is under maintenance"', () => {
     const available = 'hogehoge';
-    const AvailableIconWithInfo = AvailableToIcon(available);
-    render(AvailableIconWithInfo as JSX.Element);
+    render(<AvailableToIcon resourceAvailable={available} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
-    expect(givenProps.label).toBe('Resource will be excluded from subsequent designs');
+    expect(givenProps.label).toBe('This resource is under maintenance');
   });
 });
 
 describe('AvailableToIconForNode', () => {
-  test('When the number of available resources is 0, the label is in English as "All resources are subject to subsequent designs"', () => {
+  test('When the number of available resources is 0, the label is in English as "All resources are available"', () => {
     const unavailable_number = 0;
-    const AvailableIconWithInfo = AvailableToIconForNode(unavailable_number);
-    render(AvailableIconWithInfo as JSX.Element);
+    render(<AvailableToIconForNode unavailableNumber={unavailable_number} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
-    expect(givenProps.label).toBe('All resources are subject to subsequent designs');
+    expect(givenProps.label).toBe('All resources are available');
   });
 
-  test('When the number of available resources is 1 or more, the label is in English as "Some resources will be excluded from subsequent designs"', () => {
+  test('When the number of available resources is 1 or more, the label is in English as "Some resources are under maintenance"', () => {
     const unavailable_number = 1;
-    const AvailableIconWithInfo = AvailableToIconForNode(unavailable_number);
-    render(AvailableIconWithInfo as JSX.Element);
+    render(<AvailableToIconForNode unavailableNumber={unavailable_number} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
-    expect(givenProps.label).toBe('Some resources will be excluded from subsequent designs');
+    expect(givenProps.label).toBe('Some resources are under maintenance');
   });
 });

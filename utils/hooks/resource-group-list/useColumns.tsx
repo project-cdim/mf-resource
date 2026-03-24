@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -100,7 +100,7 @@ export const useColumns = (
         <TextInputForTableFilter label={t('ID')} value={groupFilter.query.id} setValue={groupFilter.setQuery.id} />
       ),
       filtering: groupFilter.query.id !== '',
-      noWrap: true,
+      render: ({ id }) => <LongSentences text={id} />,
     },
     {
       accessor: 'createdAt',

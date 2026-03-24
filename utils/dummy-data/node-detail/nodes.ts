@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -30,7 +30,7 @@ const resourcesOrg: APIresourceForNodeDetail = {
       state: 'Enabled',
     },
     type: 'CPU',
-    deviceSwitchInfo: 'CXLxxx',
+    devicePortList: [{ switchID: 'CXLxxx' }],
     links: [
       {
         type: 'CPU',
@@ -40,6 +40,34 @@ const resourcesOrg: APIresourceForNodeDetail = {
     // totalCores: 8,
     // capacityMiB: 32 * 1024, // 32 GiB
     // driveCapacityBytes: 4 * 1024 * 1024 * 1024 * 1024, // 4 TiB
+    powerState: 'On',
+    powerCapability: true,
+    constraints: {
+      nonRemovableDevices: [
+        {
+          deviceID: 'string',
+        },
+      ],
+    },
+  },
+  physicalLocation: {
+    rack: {
+      id: '00000000-0000-0000-0000-000000000111',
+      name: 'rack001',
+      // chassis: { id: '00000000-0000-0000-0000-000000000222', name: 'chassis001' },
+      chassis: { id: 'ch1', name: 'Jupiter XXXXXXXX' },
+    },
+  },
+  deviceUnit: {
+    id: '00000000-0000-0000-0000-000000000333',
+    annotation: {
+      systemItems: {
+        available: true,
+      },
+      // userItems: {
+      //   [index: string]: string | number | boolean | undefined,
+      // },
+    },
   },
   detected: true,
   resourceGroupIDs: [],
@@ -70,6 +98,17 @@ export const dummyNodeDetail: APInode = {
         type: 'memory',
         capacityMiB: 32 * 1024, // 32GiB
       },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: false,
+          },
+          // userItems: {
+          //   [index: string]: string | number | boolean | undefined,
+          // },
+        },
+      },
     },
     {
       ...resourcesOrg,
@@ -83,6 +122,17 @@ export const dummyNodeDetail: APInode = {
         },
         type: 'storage',
         driveCapacityBytes: 4 * 1024 * 1024 * 1024 * 1024, //4 TiB
+      },
+      deviceUnit: {
+        id: '00000000-0000-0000-0000-000000000333',
+        annotation: {
+          systemItems: {
+            available: false,
+          },
+          // userItems: {
+          //   [index: string]: string | number | boolean | undefined,
+          // },
+        },
       },
     },
     {
@@ -273,7 +323,7 @@ export const dummyNodeDetail: APInode = {
 //       device: {
 //         baseSpeedMHz: 4000,
 //         deviceID: 'res10102',
-//         deviceSwitchInfo: 'CXLA10',
+//         devicePortList: [{ switchID: 'CXLA10' }],
 //         links: [
 //           { deviceID: 'res10203', type: 'memory' },
 //           { deviceID: 'res10302', type: 'storage' },
@@ -291,7 +341,7 @@ export const dummyNodeDetail: APInode = {
 //       device: {
 //         capacityMiB: 4096,
 //         deviceID: 'res10203',
-//         deviceSwitchInfo: 'CXLA10',
+//         devicePortList: [{ switchID: 'CXLA10' }],
 //         links: [{ deviceID: 'res10102', type: 'CPU' }],
 //         status: { health: 'OK', state: 'Enabled' },
 //         type: 'memory',
@@ -303,7 +353,7 @@ export const dummyNodeDetail: APInode = {
 //       // detected: true,
 //       device: {
 //         deviceID: 'res10302',
-//         deviceSwitchInfo: 'CXLA10',
+//         devicePortList: [{ switchID: 'CXLA10' }],
 //         driveCapacityBytes: 899527000000,
 //         links: [{ deviceID: 'res10102', type: 'CPU' }],
 //         status: { health: 'OK', state: 'Enabled' },
@@ -316,7 +366,7 @@ export const dummyNodeDetail: APInode = {
 //       // detected: true,
 //       device: {
 //         deviceID: 'res10401',
-//         deviceSwitchInfo: 'CXLA10',
+//         devicePortList: [{ switchID: 'CXLA10' }],
 //         links: [{ deviceID: 'res10102', type: 'CPU' }],
 //         status: { health: 'OK', state: 'Enabled' },
 //         type: 'networkInterface',
@@ -328,7 +378,7 @@ export const dummyNodeDetail: APInode = {
 //       // detected: true,
 //       device: {
 //         deviceID: 'res10604',
-//         deviceSwitchInfo: 'CXLA10',
+//         devicePortList: [{ switchID: 'CXLA10' }],
 //         status: { health: 'Critical', state: 'Disabled' },
 //         type: 'virtualMedia',
 //         links: [],
@@ -342,7 +392,7 @@ export const dummyNodeDetail: APInode = {
 //       // "detected": true,
 //       device: {
 //         deviceID: 'res10603',
-//         deviceSwitchInfo: 'CXLA10',
+//         devicePortList: [{ switchID: 'CXLA10' }],
 //         status: {
 //           health: 'Warning',
 //           state: 'Disabled',

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -20,7 +20,6 @@ import { render } from '@testing-library/react';
 import { IconWithInfo } from '@/shared-modules/components';
 
 import { StateToIcon, StateToIconForNode } from '@/components';
-import { JSX } from 'react';
 
 jest.mock('@/shared-modules/components', () => ({
   ...jest.requireActual('@/shared-modules/components'),
@@ -35,8 +34,7 @@ describe('StateToIcon', () => {
 
   test('When the state is Enabled, the label is in English as "Resource is enabled"', () => {
     const state = 'Enabled';
-    const StateIconWithInfo = StateToIcon(state);
-    render(StateIconWithInfo as JSX.Element);
+    render(<StateToIcon state={state} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -45,8 +43,7 @@ describe('StateToIcon', () => {
 
   test('When the state is Disabled, the label is in English as "Resource is disabled"', () => {
     const state = 'Disabled';
-    const StateIconWithInfo = StateToIcon(state);
-    render(StateIconWithInfo as JSX.Element);
+    render(<StateToIcon state={state} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -69,8 +66,7 @@ describe('StateToIcon', () => {
     };
 
     for (const [state, label] of Object.entries(states)) {
-      const StateIconWithInfo = StateToIcon(state);
-      render(StateIconWithInfo as JSX.Element);
+      render(<StateToIcon state={state} />);
 
       // @ts-ignore
       const givenProps = IconWithInfo.mock.lastCall[0];
@@ -80,28 +76,27 @@ describe('StateToIcon', () => {
 
   test('When the state is unknown, there is no icon', () => {
     const state = 'hogehoge';
-    const StateIconWithInfo = StateToIcon(state);
-    expect(StateIconWithInfo).toBeNull();
+    const { container } = render(<StateToIcon state={state} />);
+    expect(container.firstChild).toBeNull();
   });
 
   test('When the state is undefined, there is no icon', () => {
     const state = undefined;
-    const StateIconWithInfo = StateToIcon(state);
-    expect(StateIconWithInfo).toBeNull();
+    const { container } = render(<StateToIcon state={state} />);
+    expect(container.firstChild).toBeNull();
   });
 
   test('When the state is null, there is no icon', () => {
     const state = null;
-    const StateIconWithInfo = StateToIcon(state as unknown as undefined);
-    expect(StateIconWithInfo).toBeNull();
+    const { container } = render(<StateToIcon state={state as unknown as undefined} />);
+    expect(container.firstChild).toBeNull();
   });
 });
 
 describe('StateToIconForNode', () => {
   test('When the number of disabled resources is 0, the label is in English as "All resources are enabled"', () => {
     const disabled_resources = 0;
-    const StateIconWithInfo = StateToIconForNode(disabled_resources);
-    render(StateIconWithInfo as JSX.Element);
+    render(<StateToIconForNode disabledResources={disabled_resources} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];
@@ -110,8 +105,7 @@ describe('StateToIconForNode', () => {
 
   test('When the number of disabled resources is 1 or more, the label is in English as "Some resources are disabled"', () => {
     const disabled_resources = 1;
-    const StateIconWithInfo = StateToIconForNode(disabled_resources);
-    render(StateIconWithInfo as JSX.Element);
+    render(<StateToIconForNode disabledResources={disabled_resources} />);
 
     // @ts-ignore
     const givenProps = IconWithInfo.mock.lastCall[0];

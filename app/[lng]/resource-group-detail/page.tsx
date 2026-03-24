@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -18,6 +18,7 @@
 
 import { Stack, Text, Title, Textarea } from '@mantine/core';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 import useSWRImmutable from 'swr/immutable';
 
 import { CardLoading, DatetimeString, HorizontalTable, MessageBox, PageHeader } from '@/shared-modules/components';
@@ -37,9 +38,7 @@ const ResourceGroupDetail = () => {
   const groupId = useIdFromQuery();
   const items = getItems(t, groupId);
 
-  // const mswInitializing = useMSW();
-  const mswInitializing = false; // Do not use MSW
-
+  const [storageError, setStorageError] = useState<Error | undefined>();
   const { data, error, isValidating, mutate } = useSWRImmutable<APIResourceGroup>(
     groupId && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resource-groups/${groupId}`,
     fetcher
@@ -47,7 +46,7 @@ const ResourceGroupDetail = () => {
 
   const { formattedData, rgError, rgIsValidating, rgMutate } = useFormatResourceListTableData(data?.resources);
 
-  const loading = useLoading(isValidating || mswInitializing);
+  const loading = useLoading(isValidating);
 
   const tableData = getTableData(t, data);
   return (
@@ -63,6 +62,7 @@ const ResourceGroupDetail = () => {
           loading={loading || rgIsValidating}
         />
         <Message error={error} rgError={rgError} />
+        {storageError && <MessageBox type='error' title={storageError.message} message={''} />}
         <CardLoading withBorder maw={'32em'} loading={loading}>
           <Text fz='sm'>{t('Name')}</Text>
           <Text fz='lg' fw={500}>
@@ -70,7 +70,7 @@ const ResourceGroupDetail = () => {
           </Text>
         </CardLoading>
         <HorizontalTable tableData={tableData} loading={loading} />
-        <ResourceList resources={formattedData} loading={loading || rgIsValidating} />
+        <ResourceList resources={formattedData} loading={loading || rgIsValidating} setStorageError={setStorageError} />
       </Stack>
     </>
   );
@@ -105,19 +105,32 @@ const getTableData = (t: any, data: APIResourceGroup | undefined) => [
   { columnName: t('Updated'), value: <DatetimeString date={data && new Date(data.updatedAt)} /> },
 ];
 
-const ResourceList = (props: { resources: APPResource[]; loading: boolean }) => {
+const ResourceList = (props: {
+  resources: APPResource[];
+  loading: boolean;
+  setStorageError: React.Dispatch<React.SetStateAction<Error | undefined>>;
+}) => {
   const t = useTranslations();
 
-  const selectedAccessors = [
+  /** Default accessors for columns */
+  const defaultAccessors = [
     'id',
     'type',
-    'health',
-    'state',
+    'status',
+    'powerState',
+    // 'health',           // Hidden by default
+    // 'state',            // Hidden by default
     'detected',
-    'cxlSwitchId',
-    'nodeIDs',
     'resourceAvailable',
+    // 'resourceGroups',   // Hidden for resource group detail
+    'placement',
+    'cxlSwitch',
+    'nodeIDs',
+    // 'composite',        // Hidden by default
   ];
+
+  /** Key for storing column settings */
+  const storeColumnsKey = 'resource-group-details.resource-list';
 
   return (
     <Stack>
@@ -125,11 +138,14 @@ const ResourceList = (props: { resources: APPResource[]; loading: boolean }) => 
         {t('Resources.list')}
       </Title>
       <ResourceListTable
-        selectedAccessors={selectedAccessors}
         data={props.resources}
         loading={props.loading}
         showAccessorSelector={true}
         showPagination={true}
+        defaultAccessors={defaultAccessors}
+        storeColumnsKey={storeColumnsKey}
+        tableName={t('Resources.list')}
+        onStorageError={props.setStorageError}
       />
     </Stack>
   );

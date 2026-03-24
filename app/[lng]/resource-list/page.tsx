@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -18,6 +18,7 @@
 
 import { Stack } from '@mantine/core';
 import { useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
 
 import { MessageBox, PageHeader } from '@/shared-modules/components';
 import { useLoading } from '@/shared-modules/utils/hooks';
@@ -36,17 +37,28 @@ const ResourceList = () => {
 
   const loading = useLoading(isValidating);
 
-  const selectedAccessors = [
-    'id',
-    'type',
-    'health',
-    'state',
-    'detected',
-    'resourceGroups',
-    'cxlSwitchId',
-    'nodeIDs',
-    'resourceAvailable',
-  ];
+  const [storageError, setStorageError] = useState<Error | undefined>();
+
+  const defaultAccessors = useMemo(
+    () => [
+      'id',
+      'type',
+      'status',
+      'powerState',
+      // 'health',         // Hidden by default
+      // 'state',          // Hidden by default
+      'detected',
+      'resourceAvailable',
+      'resourceGroups',
+      'placement',
+      'cxlSwitch',
+      'nodeIDs',
+      // 'composite',      // Hidden by default
+    ],
+    []
+  );
+
+  const storeColumnsKey = 'resource-list.resource-list';
 
   const items = [{ title: t('Resource Management') }, { title: t('Resources.list') }];
 
@@ -64,7 +76,15 @@ const ResourceList = () => {
             />
           )
       )}
-      <ResourceListTable selectedAccessors={selectedAccessors} data={data} loading={loading} />
+      {storageError && <MessageBox type='error' title={storageError.message} message='' />}
+      <ResourceListTable
+        data={data}
+        loading={loading}
+        defaultAccessors={defaultAccessors}
+        storeColumnsKey={storeColumnsKey}
+        tableName={t('Resources.list')}
+        onStorageError={setStorageError}
+      />
     </Stack>
   );
 };

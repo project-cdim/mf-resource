@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -24,7 +24,7 @@ import useSWRImmutable from 'swr/immutable';
 
 import { render } from '@/shared-modules/__test__/test-utils';
 import { MessageBox, PageHeader } from '@/shared-modules/components';
-import { useLoading, useMSW } from '@/shared-modules/utils/hooks';
+import { useLoading } from '@/shared-modules/utils/hooks';
 
 import { ResourceListTable, useFormatResourceListTableData } from '@/components';
 
@@ -35,6 +35,15 @@ jest.mock('swr/immutable', () => ({
   __esModule: true,
   default: jest.fn(),
 }));
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  })),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
+  usePathname: jest.fn(() => '/rack'),
+}));
 jest.mock('@mantine/core', () => ({
   __esModule: true,
   ...jest.requireActual('@mantine/core'),
@@ -42,7 +51,6 @@ jest.mock('@mantine/core', () => ({
 }));
 jest.mock('@/shared-modules/utils/hooks', () => ({
   ...jest.requireActual('@/shared-modules/utils/hooks'),
-  useMSW: jest.fn(),
   useLoading: jest.fn(),
 }));
 jest.mock('@/shared-modules/components', () => ({
@@ -53,12 +61,23 @@ jest.mock('@/shared-modules/components', () => ({
 jest.mock('@/components/ResourceListTable', () => ({
   ResourceListTable: jest.fn(() => <div>Resource List Table</div>),
   useFormatResourceListTableData: jest.fn(() => ({
-    data: [],
+    formattedData: [],
     rgError: undefined,
     rgIsValidating: false,
     rgMutate: jest.fn(),
   })),
 }));
+jest.mock('@/app/[lng]/rack/RackChassisContext', () => ({
+  RackChassisProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  useRackChassisContext: jest.fn(),
+}));
+jest.mock('@/utils/hooks/useRackIdFromQuery', () => ({
+  useRackIdFromQuery: jest.fn(),
+}));
+
+// Import useRackChassisContext for testing
+const { useRackChassisContext } = jest.requireMock('@/app/[lng]/rack/RackChassisContext');
+const { useRackIdFromQuery } = jest.requireMock('@/utils/hooks/useRackIdFromQuery');
 
 describe('Rack Elevations', () => {
   beforeEach(() => {
@@ -71,9 +90,17 @@ describe('Rack Elevations', () => {
       mutate: jest.fn(),
     }));
     // @ts-ignore
-    useMSW.mockReturnValue(false);
-    // @ts-ignore
     useLoading.mockReturnValue(false);
+    // Mock useRackIdFromQuery
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+    // Mock useRackChassisContext
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
   });
 
   test('The title is displayed', () => {
@@ -94,6 +121,14 @@ describe('Rack Elevations', () => {
   });
 
   test('It is possible to select a chassis(Select)', () => {
+    const mockSetSelectedChassisId = jest.fn();
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: dummyRack.chassis[0].id,
+      setSelectedChassisId: mockSetSelectedChassisId,
+      selectedChassis: dummyRack.chassis[0],
+      selectedChassisResources: [],
+    });
+
     render(<Rack />);
     act(() => {
       // @ts-ignore
@@ -107,12 +142,20 @@ describe('Rack Elevations', () => {
     expect(screen.getByText('Height(U)').nextSibling).toHaveTextContent(dummyRack.chassis[0].height.toString());
     expect(screen.getByText('Depth').nextSibling).toHaveTextContent(dummyRack.chassis[0].depth);
     expect(screen.getByText('Number of devices per type').nextSibling).toHaveTextContent('CPU(1)');
-    expect(screen.getByText('Last Updated').nextSibling).toHaveTextContent(
-      new Date(dummyRack.chassis[0].lastUpdate).toLocaleString()
+    expect(screen.getByText('Updated').nextSibling).toHaveTextContent(
+      new Date(dummyRack.chassis[0].updatedAt).toLocaleString()
     );
   });
 
   test('It is possible to select a chassis(button)', async () => {
+    const mockSetSelectedChassisId = jest.fn();
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: dummyRack.chassis[1].id,
+      setSelectedChassisId: mockSetSelectedChassisId,
+      selectedChassis: dummyRack.chassis[1],
+      selectedChassisResources: [],
+    });
+
     render(<Rack />);
     await UserEvent.click(screen.getByRole('button', { name: dummyRack.chassis[1].name }));
     expect(screen.getByText('Model Name').nextSibling).toHaveTextContent(dummyRack.chassis[1].modelName);
@@ -123,12 +166,19 @@ describe('Rack Elevations', () => {
     expect(screen.getByText('Height(U)').nextSibling).toHaveTextContent(dummyRack.chassis[1].height.toString());
     expect(screen.getByText('Depth').nextSibling).toHaveTextContent(dummyRack.chassis[1].depth);
     expect(screen.getByText('Number of devices per type').nextSibling).toHaveTextContent('CPU(1), Memory(1)');
-    expect(screen.getByText('Last Updated').nextSibling).toHaveTextContent(
-      new Date(dummyRack.chassis[1].lastUpdate).toLocaleString()
+    expect(screen.getByText('Updated').nextSibling).toHaveTextContent(
+      new Date(dummyRack.chassis[1].updatedAt).toLocaleString()
     );
   });
 
   test('The onMouseLeave event of the button works correctly', async () => {
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
+
     render(<Rack />);
     const button = screen.getByRole('button', { name: dummyRack.chassis[1].name });
     await UserEvent.unhover(button);
@@ -185,6 +235,16 @@ describe('Rack Elevations: When an Error Occurs', () => {
       error: null,
       mutate: jest.fn(),
     }));
+    // Mock useRackIdFromQuery
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+    // Mock useRackChassisContext
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
   });
   test('When the server returns an error, a message is displayed', async () => {
     // @ts-ignore
@@ -200,7 +260,7 @@ describe('Rack Elevations: When an Error Occurs', () => {
       mutate: jest.fn(),
     }));
     (useFormatResourceListTableData as jest.Mock).mockReturnValue({
-      data: [],
+      formattedData: [],
       rgError: {
         message: 'Error occurred second',
         response: {
@@ -235,7 +295,7 @@ describe('Rack Elevations: When an Error Occurs', () => {
       mutate: jest.fn(),
     }));
     (useFormatResourceListTableData as jest.Mock).mockReturnValue({
-      data: [],
+      formattedData: [],
       rgError: {
         message: 'Error occurred 2',
         response: null,
@@ -267,6 +327,22 @@ describe('Rack Elevations(No Chassis)', () => {
       error: null,
       mutate: jest.fn(),
     }));
+    // Mock useRackIdFromQuery
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+    // Mock useRackChassisContext
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
+    (useFormatResourceListTableData as jest.Mock).mockReturnValue({
+      formattedData: [],
+      rgError: undefined,
+      rgIsValidating: false,
+      rgMutate: jest.fn(),
+    });
   });
 
   test('The chassis information is not displayed', () => {
@@ -275,7 +351,7 @@ describe('Rack Elevations(No Chassis)', () => {
     expect(button).toBeNull();
     // @ts-ignore
     const data = ResourceListTable.mock.lastCall[0].data;
-    expect(data).toBeUndefined();
+    expect(data).toEqual([]);
   });
 });
 
@@ -289,6 +365,16 @@ describe('The properties of the card vary depending on the display language', ()
       error: null,
       mutate: jest.fn(),
     }));
+    // Mock useRackIdFromQuery
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+    // Mock useRackChassisContext
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
   });
 
   test('When in English, the style becomes white-space:normal', () => {
@@ -311,5 +397,180 @@ describe('The properties of the card vary depending on the display language', ()
     render(<Rack />);
     const th = screen.queryByText('Number of devices per type');
     expect(th).toHaveStyle({ whiteSpace: 'nowrap' });
+  });
+});
+
+describe('Rack component environment variable handling', () => {
+  let originalEnv: string | undefined;
+
+  beforeEach(() => {
+    // Store original environment variable
+    originalEnv = process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID;
+    jest.clearAllMocks();
+
+    // @ts-ignore
+    useSWRImmutable.mockImplementation(() => ({
+      data: dummyRack,
+      error: null,
+      mutate: jest.fn(),
+    }));
+    // @ts-ignore
+    useLoading.mockReturnValue(false);
+    // Mock useRackIdFromQuery
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+    // Mock useRackChassisContext
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
+  });
+
+  afterEach(() => {
+    // Restore original environment variable
+    if (originalEnv !== undefined) {
+      process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = originalEnv;
+    } else {
+      delete process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID;
+    }
+  });
+
+  test('uses environment variable when NEXT_PUBLIC_RACK_ELEVATIONS_ID is set', () => {
+    // Set environment variable
+    process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = 'custom-rack-123';
+
+    render(<Rack />);
+
+    const calls = (useSWRImmutable as jest.Mock).mock.calls;
+    expect(calls[0][0]).toContain('/racks/custom-rack-123?detail=true');
+  });
+
+  test('uses default rack ID when NEXT_PUBLIC_RACK_ELEVATIONS_ID is empty string', () => {
+    // Set environment variable to empty string
+    process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = '';
+
+    render(<Rack />);
+
+    const calls = (useSWRImmutable as jest.Mock).mock.calls;
+    expect(calls[0][0]).toContain('/racks/rack11?detail=true');
+  });
+
+  test('uses default rack ID when NEXT_PUBLIC_RACK_ELEVATIONS_ID is undefined', () => {
+    // Set environment variable to empty string to trigger default value
+    const originalValue = process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID;
+    process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = '';
+
+    render(<Rack />);
+
+    const calls = (useSWRImmutable as jest.Mock).mock.calls;
+    expect(calls[0][0]).toContain('/racks/rack11?detail=true');
+
+    // Restore original value
+    process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = originalValue;
+  });
+});
+
+describe('Rack component with query parameter handling', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // @ts-ignore
+    useSWRImmutable.mockImplementation(() => ({
+      data: dummyRack,
+      error: null,
+      mutate: jest.fn(),
+    }));
+    // @ts-ignore
+    useLoading.mockReturnValue(false);
+    // Mock useRackChassisContext
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: jest.fn(),
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
+  });
+
+  test('uses queryRackId when provided', () => {
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue(['custom-rack-456', undefined]);
+
+    render(<Rack />);
+
+    const calls = (useSWRImmutable as jest.Mock).mock.calls;
+    expect(calls[0][0]).toContain('/racks/custom-rack-456?detail=true');
+  });
+
+  test('uses environment variable when queryRackId is not provided and env is set', () => {
+    process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = 'env-rack-789';
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+
+    render(<Rack />);
+
+    const calls = (useSWRImmutable as jest.Mock).mock.calls;
+    expect(calls[0][0]).toContain('/racks/env-rack-789?detail=true');
+  });
+
+  test('uses default rack11 when queryRackId and env are not provided', () => {
+    process.env.NEXT_PUBLIC_RACK_ELEVATIONS_ID = '';
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+
+    render(<Rack />);
+
+    const calls = (useSWRImmutable as jest.Mock).mock.calls;
+    expect(calls[0][0]).toContain('/racks/rack11?detail=true');
+  });
+});
+
+describe('RackContent component with queryChassisId', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // @ts-ignore
+    useSWRImmutable.mockImplementation(() => ({
+      data: dummyRack,
+      error: null,
+      mutate: jest.fn(),
+    }));
+    // @ts-ignore
+    useLoading.mockReturnValue(false);
+  });
+
+  test('sets selectedChassisId when queryChassisId is provided', () => {
+    const mockSetSelectedChassisId = jest.fn();
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: mockSetSelectedChassisId,
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
+
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, 'chassis-123']);
+
+    render(<Rack />);
+
+    expect(mockSetSelectedChassisId).toHaveBeenCalledWith('chassis-123');
+  });
+
+  test('sets selectedChassisId to undefined when queryChassisId is not provided', () => {
+    const mockSetSelectedChassisId = jest.fn();
+    (useRackChassisContext as jest.Mock).mockReturnValue({
+      selectedChassisId: undefined,
+      setSelectedChassisId: mockSetSelectedChassisId,
+      selectedChassis: undefined,
+      selectedChassisResources: [],
+    });
+
+    // @ts-ignore
+    useRackIdFromQuery.mockReturnValue([undefined, undefined]);
+
+    render(<Rack />);
+
+    expect(mockSetSelectedChassisId).toHaveBeenCalledWith(undefined);
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -21,11 +21,9 @@ export type APIrack = {
   /** Rack ID */
   id: string;
   /** Rack name */
-  name: string;
-  /** Description */
-  description: string;
-  /** Height (U) */
+  name?: string;
+  /** Height (U) - Rack unit count */
   height: number;
-  /** Chassis */
+  /** Chassis list */
   chassis: APIChassis[];
 };

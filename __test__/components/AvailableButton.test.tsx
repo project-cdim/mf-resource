@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -35,12 +35,13 @@ jest.mock('next-intl', () => ({
   useTranslations: () => (key: string, values?: object) => {
     // Mock translations
     const translations: { [key: string]: string } = {
-      Include: 'Include',
-      Exclude: 'Exclude',
-      'Device ID': 'Device ID',
-      'Do you want to include?': 'Do you want to include?',
-      'Do you want to exclude?': 'Do you want to exclude?',
-      'Failed to configure {operation}': `Failed to configure ${(values as { operation?: string })?.operation || ''}`,
+      'Start Maintenance': 'Start Maintenance',
+      End: 'End',
+      Start: 'Start',
+      'Do you want to start maintenance?': 'Do you want to start maintenance?',
+      'Do you want to end maintenance?': 'Do you want to end maintenance?',
+      'Failed to configure {operation} maintenance': `Failed to configure ${(values as { operation?: string })?.operation || ''} maintenance`,
+      Maintenance: 'Maintenance',
       Yes: 'Yes',
       No: 'No',
       Error: 'Error',
@@ -68,7 +69,7 @@ describe('AvailableButton', () => {
   // Common test props
   const mockProps = {
     isAvailable: true,
-    deviceId: 'device123',
+    unitId: 'device123',
     doOnSuccess: jest.fn(),
   };
 
@@ -92,7 +93,7 @@ describe('AvailableButton', () => {
   test('renders Exclude button when isAvailable is true', () => {
     render(<AvailableButton {...mockProps} />);
 
-    const button = screen.getByRole('button', { name: 'Exclude' });
+    const button = screen.getByRole('button', { name: 'Start Maintenance' });
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
@@ -100,7 +101,7 @@ describe('AvailableButton', () => {
   test('renders Include button when isAvailable is false', () => {
     render(<AvailableButton {...mockProps} isAvailable={false} />);
 
-    const button = screen.getByRole('button', { name: 'Include' });
+    const button = screen.getByRole('button', { name: 'End' });
     expect(button).toBeInTheDocument();
   });
 
@@ -108,14 +109,14 @@ describe('AvailableButton', () => {
     mockUsePermission.mockReturnValue(false);
     render(<AvailableButton {...mockProps} />);
 
-    const button = screen.getByRole('button', { name: 'Exclude' });
+    const button = screen.getByRole('button', { name: 'Start Maintenance' });
     expect(button).toBeDisabled();
   });
 
   test('opens modal when button is clicked', () => {
     render(<AvailableButton {...mockProps} />);
 
-    const button = screen.getByRole('button', { name: 'Exclude' });
+    const button = screen.getByRole('button', { name: 'Start Maintenance' });
     fireEvent.click(button);
 
     expect(mockOpenModal).toHaveBeenCalled();
@@ -135,9 +136,8 @@ describe('AvailableButton', () => {
 
     // Check that modal components exist with correct text
     const modalContent = document.body.textContent || '';
-    expect(modalContent).toContain('Exclude');
-    expect(modalContent).toContain('Device ID : device123');
-    expect(modalContent).toContain('Do you want to exclude?');
+    expect(modalContent).toContain('Start Maintenance');
+    expect(modalContent).toContain('Do you want to start maintenance?');
   });
 
   test('displays confirmation modal with appropriate message for Include', () => {
@@ -154,9 +154,8 @@ describe('AvailableButton', () => {
 
     // Check that modal components exist with correct text
     const modalContent = document.body.textContent || '';
-    expect(modalContent).toContain('Include');
-    expect(modalContent).toContain('Device ID : device123');
-    expect(modalContent).toContain('Do you want to include?');
+    expect(modalContent).toContain('End');
+    expect(modalContent).toContain('Do you want to end maintenance?');
   });
 
   test('submits API request when modal is confirmed', async () => {
@@ -177,7 +176,7 @@ describe('AvailableButton', () => {
     // Wait for the API call to complete
     await waitFor(() => {
       expect(mockAxios.put).toHaveBeenCalledWith(
-        expect.stringContaining('/resources/device123/annotation'),
+        `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/device-units/device123/annotation/system-items`,
         { available: false } // toggling from true to false
       );
       expect(mockCloseModal).toHaveBeenCalled();
@@ -238,6 +237,80 @@ describe('AvailableButton', () => {
 
     // Check that error message is in the document
     const errorContent = document.body.textContent || '';
-    expect(errorContent).toContain('Failed to configure exclude');
+    expect(errorContent).toContain('Failed to configure start maintenance');
+  });
+
+  test('handles undefined isAvailable', () => {
+    render(<AvailableButton {...mockProps} isAvailable={undefined} />);
+
+    const button = screen.getByRole('button', { name: 'End' });
+    expect(button).toBeInTheDocument();
+  });
+
+  test('handles undefined unitId', () => {
+    render(<AvailableButton {...mockProps} unitId={undefined} />);
+
+    const button = screen.getByRole('button', { name: 'Start Maintenance' });
+    expect(button).toBeInTheDocument();
+  });
+
+  test('displays secondaryMessage in modal', () => {
+    const secondaryMsg = 'Additional warning message';
+    mockUseConfirmModal.mockReturnValue({
+      openModal: mockOpenModal,
+      closeModal: mockCloseModal,
+      setError: mockSetError,
+      isModalOpen: true,
+      error: undefined,
+    });
+
+    render(<AvailableButton {...mockProps} secondaryMessage={secondaryMsg} />);
+
+    const modalContent = document.body.textContent || '';
+    expect(modalContent).toContain(secondaryMsg);
+  });
+
+  test('submits API request with isAvailable false', async () => {
+    mockUseConfirmModal.mockReturnValue({
+      openModal: mockOpenModal,
+      closeModal: mockCloseModal,
+      setError: mockSetError,
+      isModalOpen: true,
+      error: undefined,
+    });
+
+    render(<AvailableButton {...mockProps} isAvailable={false} />);
+
+    const confirmButton = screen.getByRole('button', { name: 'Yes' });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockAxios.put).toHaveBeenCalledWith(
+        `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/device-units/device123/annotation/system-items`,
+        { available: true } // toggling from false to true
+      );
+    });
+  });
+
+  test('calls doOnSuccess with response data', async () => {
+    const mockResponse = { data: { success: true, id: '123' } };
+    mockAxios.put.mockResolvedValueOnce(mockResponse);
+
+    mockUseConfirmModal.mockReturnValue({
+      openModal: mockOpenModal,
+      closeModal: mockCloseModal,
+      setError: mockSetError,
+      isModalOpen: true,
+      error: undefined,
+    });
+
+    render(<AvailableButton {...mockProps} />);
+
+    const confirmButton = screen.getByRole('button', { name: 'Yes' });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockProps.doOnSuccess).toHaveBeenCalledWith(mockResponse);
+    });
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -29,33 +29,58 @@ const chassis: APIChassis = {
     'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Placeat asperiores, culpa tempore hic rem ut at necessitatibus harum. Excepturi illo accusantium doloribus pariatur neque in voluptas repellendus ut laboriosam molestias.', // Description
   unitPosition: 1, //  UnitPosition
   facePosition: 'Front', //  Front / Rear
-  height: 1, //  Height(U)
+  height: 1, //  Height
   depth: 'Half', //  Depth
-  lastUpdate: '2023/06/19 12:33', // Last Update
-  resources: [
+  createdAt: '2023-06-19T12:33:11Z', // Created date and time
+  updatedAt: '2023-06-19T12:33:11Z', // Updated date and time
+  deviceUnits: [
     {
-      device: {
-        deviceID: 'res10101',
-        type: 'CPU',
-        attribute: {},
-        status: {
-          state: 'Enabled',
-          health: 'OK',
-        },
-        deviceSwitchInfo: 'CXLA10',
-        links: [
-          {
-            type: 'CPU',
-            deviceID: 'string',
-          },
-        ],
-      },
-      resourceGroupIDs: ['string'],
+      id: '00000000-0000-0000-0000-000000000333',
       annotation: {
-        available: true,
+        systemItems: {
+          available: true,
+        },
       },
-      detected: true,
-      nodeIDs: [],
+      resources: [
+        {
+          device: {
+            deviceID: 'res10101',
+            type: 'CPU',
+            attribute: {},
+            status: {
+              state: 'Enabled',
+              health: 'OK',
+            },
+            devicePortList: [{ switchID: 'CXLA10' }],
+            links: [
+              {
+                type: 'CPU',
+                deviceID: 'string',
+              },
+            ],
+            powerState: 'On',
+            powerCapability: true,
+            constraints: {
+              nonRemovableDevices: [
+                {
+                  deviceID: 'string',
+                },
+              ],
+            },
+          },
+          resourceGroupIDs: ['string'],
+          annotation: {
+            available: true,
+          },
+          detected: true,
+          nodeIDs: [],
+        },
+      ],
+    },
+  ],
+  CXLSwitches: [
+    {
+      id: 'CXLA10',
     },
   ],
 };

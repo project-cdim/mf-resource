@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -47,12 +47,9 @@ const ResourceDetail = () => {
     { title: `${t('Resource Details')} <${resourceId}>` },
   ];
 
-  // const mswInitializing = useMSW();
-  const mswInitializing = false; // Not using MSW
-
   //** Get resource details */
   const { data, error, isValidating, mutate } = useSWRImmutable<APIresource>(
-    !mswInitializing && resourceId && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources/${resourceId}`,
+    resourceId && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resources/${resourceId}`,
     fetcher
   );
 
@@ -63,9 +60,9 @@ const ResourceDetail = () => {
     mutate: resourceGroupsMutate,
   } = useResourceGroupsData(); // Fetch resource groups data
 
-  const [successInfo, setSuccessInfo] = useState<
-    { operation: 'Exclude' | 'Include' | 'UpdateResourceGroup' } | undefined
-  >(undefined);
+  const [successInfo, setSuccessInfo] = useState<{ operation: 'End' | 'Start' | 'UpdateResourceGroup' } | undefined>(
+    undefined
+  );
   const [dateRange, setDateRange] = useState<[Date, Date]>(() => {
     const today = new Date();
     const oneMonthAgo = new Date(today);
@@ -85,9 +82,9 @@ const ResourceDetail = () => {
     setSuccessInfo(undefined);
   };
 
-  const loading = useLoading(isValidating || mswInitializing);
-  const summaryLoading = useLoading(isValidating || resourceGroupsValidating || mswInitializing);
-  const performanceLoading = useLoading(isValidating || graphValidating || mswInitializing);
+  const loading = useLoading(isValidating);
+  const summaryLoading = useLoading(isValidating || resourceGroupsValidating);
+  const performanceLoading = useLoading(isValidating || graphValidating);
 
   return (
     <>
@@ -108,13 +105,13 @@ const ResourceDetail = () => {
             if ('operation' in axiosResOrOperation) {
               // Object case (e.g., for resource group update)
               setSuccessInfo({
-                operation: axiosResOrOperation.operation as 'Exclude' | 'Include' | 'UpdateResourceGroup',
+                operation: axiosResOrOperation.operation as 'Start' | 'End' | 'UpdateResourceGroup',
               });
               mutate();
             } else {
               // AxiosResponse case (e.g., for Available change)
               const { available } = axiosResOrOperation.data;
-              setSuccessInfo({ operation: available ? 'Include' : 'Exclude' });
+              setSuccessInfo({ operation: available ? 'End' : 'Start' });
               mutate();
             }
           }}
@@ -136,7 +133,7 @@ const ResourceDetail = () => {
 };
 
 const Messages = (props: {
-  successInfo: { operation: 'Exclude' | 'Include' | 'UpdateResourceGroup' } | undefined;
+  successInfo: { operation: 'Start' | 'End' | 'UpdateResourceGroup' } | undefined;
   setSuccessInfo: CallableFunction;
   error: { message: string; response: { data: { message: string } } } | undefined;
   resourceGroupsError: { message: string } | undefined;
@@ -155,7 +152,7 @@ const Messages = (props: {
               ? t('The resource group has been successfully {operation}', {
                   operation: t('Edit').toLowerCase(),
                 })
-              : t('The resource settings have been successfully updated to {operation}', {
+              : t('The settings have been successfully updated to {operation} maintenance', {
                   operation: t(successInfo.operation).toLowerCase(),
                 })
           }

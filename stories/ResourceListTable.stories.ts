@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -42,13 +42,14 @@ type Story = StoryObj<typeof meta>;
 const SELECTED_ACCESSORS = [
   'id',
   'type',
-  'health',
-  'state',
+  'status',
+  'powerState',
   'detected',
-  'resourceGroups',
-  'cxlSwitchId',
-  'nodeIDs',
   'resourceAvailable',
+  'resourceGroups',
+  'placement',
+  'cxlSwitch',
+  'nodeIDs',
 ];
 
 /** Default */
@@ -64,6 +65,8 @@ export const Standard: Story = {
     showAccessorSelector: true,
     /** Show pagination */
     showPagination: true,
+    /** Store columns key */
+    storeColumnsKey: 'resourceListTable',
   },
 };
 
@@ -80,6 +83,8 @@ export const EmptySelectedAccessors: Story = {
     showAccessorSelector: true,
     /** Show pagination */
     showPagination: true,
+    /** Store columns key */
+    storeColumnsKey: 'resourceListTable',
   },
 };
 
@@ -96,6 +101,8 @@ export const EmptyData: Story = {
     showAccessorSelector: true,
     /** Show pagination */
     showPagination: true,
+    /** Store columns key */
+    storeColumnsKey: 'resourceListTable',
   },
 };
 
@@ -112,6 +119,8 @@ export const LoadingTrue: Story = {
     showAccessorSelector: true,
     /** Show pagination */
     showPagination: true,
+    /** Store columns key */
+    storeColumnsKey: 'resourceListTable',
   },
 };
 
@@ -128,6 +137,8 @@ export const HiddenAccessorSelector: Story = {
     showAccessorSelector: false,
     /** Show pagination */
     showPagination: true,
+    /** Store columns key */
+    storeColumnsKey: 'resourceListTable',
   },
 };
 
@@ -144,5 +155,7 @@ export const HiddenPagination: Story = {
     showAccessorSelector: true,
     /** Show pagination */
     showPagination: false,
+    /** Store columns key */
+    storeColumnsKey: 'resourceListTable',
   },
 };

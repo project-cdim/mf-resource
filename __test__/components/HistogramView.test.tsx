@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -132,4 +132,18 @@ describe('HistogramView', () => {
       expect(noDataText).toBeInTheDocument();
     }
   );
+
+  test('executes new Date(date) when date prop is provided', () => {
+    const props: HistogramViewProps = {
+      title: 'Usage rate with date',
+      data: singleData,
+      valueFormatter: formatNumberOfResources,
+      loading: false,
+      date: '2025-01-15T12:00:00Z',
+    };
+
+    render(<HistogramView {...props} />);
+
+    expect(screen.getByText(/At .*/)).toBeInTheDocument();
+  });
 });

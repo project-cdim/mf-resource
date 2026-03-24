@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -48,6 +48,14 @@ jest.mock('@/components/DetectionStatusToIcon', () => ({
 
 jest.mock('@/components/AvailableToIcon', () => ({
   AvailableToIcon: jest.fn(() => <div data-testid='available-icon'>Available Icon</div>),
+}));
+
+jest.mock('@/components/PowerStateToIcon', () => ({
+  PowerStateToIcon: jest.fn(() => <div data-testid='power-state-icon'>Power State Icon</div>),
+}));
+
+jest.mock('@/components/StatusToIcon', () => ({
+  StatusToIcon: jest.fn(() => <div data-testid='status-icon'>Status Icon</div>),
 }));
 
 // Mock ResourceGroupSelectButton
@@ -107,14 +115,38 @@ describe('ResourceDetailSummary Component', () => {
         health: 'OK',
         state: 'Enabled',
       },
-      deviceSwitchInfo: 'Switch-1',
+      devicePortList: [{ fabricID: 'fabric1', switchID: 'Switch-1' }],
+      powerState: 'On',
+      powerCapability: true,
+      constraints: {
+        nonRemovableDevices: [],
+      },
     },
     resourceGroupIDs: ['group-1', 'group-2'],
     nodeIDs: ['node-1', 'node-2'],
     annotation: {
       available: true,
     },
+    deviceUnit: {
+      id: 'unit-123',
+      annotation: {
+        systemItems: {
+          available: true,
+        },
+        userItems: {},
+      },
+    },
     detected: true,
+    physicalLocation: {
+      rack: {
+        id: 'rack-1',
+        name: 'Rack 1',
+        chassis: {
+          id: 'chassis-1',
+          name: 'Chassis 1',
+        },
+      },
+    },
   };
 
   // Mock function for success callback
@@ -159,10 +191,10 @@ describe('ResourceDetailSummary Component', () => {
     expect(screen.getByTestId('horizontal-table')).toBeInTheDocument();
 
     // Check if icons have been rendered
-    expect(HealthToIcon).toHaveBeenCalledWith('OK');
-    expect(StateToIcon).toHaveBeenCalledWith('Enabled');
-    expect(DetectionStatusToIcon).toHaveBeenCalledWith(true);
-    expect(AvailableToIcon).toHaveBeenCalledWith('Available');
+    expect(HealthToIcon).toHaveBeenCalledWith({ health: 'OK' }, undefined);
+    expect(StateToIcon).toHaveBeenCalledWith({ state: 'Enabled' }, undefined);
+    expect(DetectionStatusToIcon).toHaveBeenCalledWith({ detected: true }, undefined);
+    expect(AvailableToIcon).toHaveBeenCalledWith({ resourceAvailable: 'Available' }, undefined);
   });
 
   test('renders group and node related data correctly', () => {
@@ -232,10 +264,12 @@ describe('ResourceDetailSummary Component', () => {
   });
 
   test('handles null or undefined values in the data object', () => {
-    const incompleteData: APIresource = {
+    const incompleteData = {
       device: {
         deviceID: 'device-123',
         type: 'CPU',
+        powerState: 'On',
+        powerCapability: true,
         status: {
           // We'll use null instead of undefined which should trigger the same behavior
           health: null as unknown as 'OK',
@@ -247,32 +281,53 @@ describe('ResourceDetailSummary Component', () => {
       annotation: {
         available: false,
       },
+      deviceUnit: {
+        id: 'unit-123',
+        annotation: {
+          systemItems: {
+            available: false,
+          },
+          userItems: {},
+        },
+      },
       detected: false,
-    };
+      physicalLocation: {
+        rack: {
+          id: 'rack-1',
+          name: 'Rack 1',
+          chassis: {
+            id: 'chassis-1',
+            name: 'Chassis 1',
+          },
+        },
+      },
+    } as APIresource;
 
     render(<ResourceDetailSummary data={incompleteData} loading={false} doOnSuccess={mockDoOnSuccess} />);
 
     // Check that it handles null health and state
-    expect(HealthToIcon).toHaveBeenCalledWith(null);
-    expect(StateToIcon).toHaveBeenCalledWith(null);
+    expect(HealthToIcon).toHaveBeenCalledWith({ health: null }, undefined);
+    expect(StateToIcon).toHaveBeenCalledWith({ state: null }, undefined);
 
     // Check that it handles false for available and detected
-    expect(DetectionStatusToIcon).toHaveBeenCalledWith(false);
-    expect(AvailableToIcon).toHaveBeenCalledWith('Unavailable');
+    expect(DetectionStatusToIcon).toHaveBeenCalledWith({ detected: false }, undefined);
+    expect(AvailableToIcon).toHaveBeenCalledWith({ resourceAvailable: 'Unavailable' }, undefined);
   });
 
   test('handles empty arrays for resourceGroupIDs and nodeIDs', () => {
-    const dataWithEmptyArrays: APIresource = {
+    const dataWithEmptyArrays = {
       ...mockResourceData,
       resourceGroupIDs: [],
       nodeIDs: [],
-    };
+      physicalLocation: undefined,
+    } as unknown as APIresource;
 
     render(<ResourceDetailSummary data={dataWithEmptyArrays} loading={false} doOnSuccess={mockDoOnSuccess} />);
 
-    // Check that no page links are rendered for empty arrays
+    // Check that no page links are rendered for empty arrays (except possibly composite if it exists)
     const pageLinks = screen.queryAllByTestId('page-link');
-    expect(pageLinks).toHaveLength(0);
+    // Should have no links for resourceGroups, nodes, or placement
+    expect(pageLinks.length).toBe(0);
   });
 
   test('handles undefined resourceGroupIDs and uses default empty array', () => {
@@ -298,5 +353,221 @@ describe('ResourceDetailSummary Component', () => {
     // Clicking the button should still work
     resourceGroupButton.click();
     expect(mockDoOnSuccess).toHaveBeenCalledWith({ operation: 'UpdateResourceGroup' });
+  });
+
+  test('renders composite resource link when nonRemovableDevices exists', () => {
+    const dataWithComposite: APIresource = {
+      ...mockResourceData,
+      device: {
+        ...mockResourceData.device,
+        constraints: {
+          nonRemovableDevices: [{ deviceID: 'device-1' }, { deviceID: 'device-2' }],
+        },
+      },
+    };
+
+    render(<ResourceDetailSummary data={dataWithComposite} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that composite link is rendered
+    const compositeLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-composite-resource-detail'));
+    expect(compositeLinks.length).toBeGreaterThan(0);
+  });
+
+  test('does not render composite resource link when nonRemovableDevices is empty', () => {
+    const dataWithoutComposite: APIresource = {
+      ...mockResourceData,
+      device: {
+        ...mockResourceData.device,
+        constraints: {
+          nonRemovableDevices: [],
+        },
+      },
+    };
+
+    render(<ResourceDetailSummary data={dataWithoutComposite} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that composite link is not rendered
+    const compositeLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-composite-resource-detail'));
+    expect(compositeLinks).toHaveLength(0);
+  });
+
+  test('renders placement link when physicalLocation exists', () => {
+    render(<ResourceDetailSummary data={mockResourceData} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that placement link is rendered
+    const placementLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-rack'));
+    expect(placementLinks.length).toBeGreaterThan(0);
+  });
+
+  test('does not render placement link when physicalLocation is undefined', () => {
+    const dataWithoutPlacement = {
+      ...mockResourceData,
+      physicalLocation: undefined,
+    } as unknown as APIresource;
+
+    render(<ResourceDetailSummary data={dataWithoutPlacement} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that placement link is not rendered
+    const placementLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-rack'));
+    expect(placementLinks).toHaveLength(0);
+  });
+
+  test('does not render placement link when physicalLocation is empty object', () => {
+    const dataWithEmptyPlacement = {
+      ...mockResourceData,
+      physicalLocation: {},
+    } as unknown as APIresource;
+
+    render(<ResourceDetailSummary data={dataWithEmptyPlacement} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that placement link is not rendered
+    const placementLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-rack'));
+    expect(placementLinks).toHaveLength(0);
+  });
+
+  test('renders Under Maintenance text when available is false', () => {
+    const dataUnavailable: APIresource = {
+      ...mockResourceData,
+      deviceUnit: {
+        ...mockResourceData.deviceUnit,
+        annotation: {
+          systemItems: {
+            available: false,
+          },
+          userItems: {},
+        },
+      },
+    };
+
+    render(<ResourceDetailSummary data={dataUnavailable} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that "Under Maintenance" text is displayed
+    expect(screen.getByText('Under Maintenance')).toBeInTheDocument();
+    expect(AvailableToIcon).toHaveBeenCalledWith({ resourceAvailable: 'Unavailable' }, undefined);
+  });
+
+  test('does not render Under Maintenance text when available is true', () => {
+    render(<ResourceDetailSummary data={mockResourceData} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that "Under Maintenance" text is not displayed
+    expect(screen.queryByText('Under Maintenance')).not.toBeInTheDocument();
+    expect(AvailableToIcon).toHaveBeenCalledWith({ resourceAvailable: 'Available' }, undefined);
+  });
+
+  test('renders Not Detected text when detected is false', () => {
+    const dataNotDetected: APIresource = {
+      ...mockResourceData,
+      detected: false,
+    };
+
+    render(<ResourceDetailSummary data={dataNotDetected} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that "Not Detected" text is displayed
+    expect(screen.getByText('Not Detected')).toBeInTheDocument();
+    expect(DetectionStatusToIcon).toHaveBeenCalledWith({ detected: false }, undefined);
+  });
+
+  test('renders Detected text when detected is true', () => {
+    render(<ResourceDetailSummary data={mockResourceData} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that "Detected" text is displayed
+    expect(screen.getByText('Detected')).toBeInTheDocument();
+    expect(DetectionStatusToIcon).toHaveBeenCalledWith({ detected: true }, undefined);
+  });
+
+  test('passes correct secondary message to AvailableButton when composite exists', () => {
+    const dataWithComposite: APIresource = {
+      ...mockResourceData,
+      device: {
+        ...mockResourceData.device,
+        constraints: {
+          nonRemovableDevices: [{ deviceID: 'device-1' }],
+        },
+      },
+    };
+
+    render(<ResourceDetailSummary data={dataWithComposite} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // AvailableButton should be rendered
+    expect(screen.getByTestId('available-button')).toBeInTheDocument();
+  });
+
+  test('renders node links correctly', () => {
+    render(<ResourceDetailSummary data={mockResourceData} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that node links are rendered
+    const nodeLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-node-detail'));
+    expect(nodeLinks.length).toBe(mockResourceData.nodeIDs?.length || 0);
+  });
+
+  test('renders composite link with empty string fallback when unitID is empty', () => {
+    const dataWithEmptyUnitID: APIresource = {
+      ...mockResourceData,
+      deviceUnit: {
+        id: '',
+        annotation: {
+          systemItems: {
+            available: true,
+          },
+          userItems: {},
+        },
+      },
+      device: {
+        ...mockResourceData.device,
+        constraints: {
+          nonRemovableDevices: [{ deviceID: 'device-1' }],
+        },
+      },
+    };
+
+    render(<ResourceDetailSummary data={dataWithEmptyUnitID} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Check that composite link is rendered with empty id fallback
+    const compositeLinks = screen
+      .queryAllByTestId('page-link')
+      .filter((link) => link.getAttribute('href')?.includes('/cdim/res-composite-resource-detail'));
+    expect(compositeLinks.length).toBeGreaterThan(0);
+
+    // Verify the link has the empty string fallback in query
+    const compositeLink = compositeLinks[0];
+    expect(compositeLink.getAttribute('href')).toContain('id=');
+  });
+
+  test('renders powerState without translation when t.has returns false', () => {
+    // Mock useTranslations to return t.has as false for certain values
+    const mockTHas = jest.fn((key: any) => key !== 'UnknownPowerState');
+    const mockT = Object.assign(
+      jest.fn((str: string) => str),
+      { has: mockTHas }
+    );
+    jest.spyOn(require('next-intl'), 'useTranslations').mockReturnValue(mockT);
+
+    const dataWithUnknownPowerState: APIresource = {
+      ...mockResourceData,
+      device: {
+        ...mockResourceData.device,
+        powerState: 'UnknownPowerState' as any,
+      },
+    };
+
+    render(<ResourceDetailSummary data={dataWithUnknownPowerState} loading={false} doOnSuccess={mockDoOnSuccess} />);
+
+    // Verify the component renders without crashing
+    expect(screen.getByTestId('horizontal-table')).toBeInTheDocument();
+
+    // Verify t.has was called with the power state
+    expect(mockTHas).toHaveBeenCalledWith('UnknownPowerState');
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -45,6 +45,7 @@ const dummyNodeFilter: NodeListFilter = {
     warning: ['notExist'],
     critical: ['notExist'],
     unavailable: ['notExist'],
+    poweroff: ['notExist'],
   },
   // Set function
   setQuery: {
@@ -54,6 +55,7 @@ const dummyNodeFilter: NodeListFilter = {
     warning: jest.fn(),
     critical: jest.fn(),
     unavailable: jest.fn(),
+    poweroff: jest.fn(),
   },
   // Select options
   selectOptions: {
@@ -66,6 +68,7 @@ const dummyNodeFilter: NodeListFilter = {
 const selectedAccessors = [
   'id',
   'device.connected',
+  'device.poweroff',
   'device.disabled',
   'device.warning',
   'device.critical',
@@ -80,7 +83,7 @@ describe('useColumns', () => {
   test('It returns column information of type DataTableColumn (all visible)', () => {
     const columns = useColumns(dummyNodeFilter, selectedAccessors);
 
-    expect(columns).toHaveLength(6);
+    expect(columns).toHaveLength(7);
     // ID column
     expect(columns[0].accessor).toBe('id');
     expect(columns[0].title).toBe('ID');
@@ -93,35 +96,41 @@ describe('useColumns', () => {
     expect(columns[1].sortable).toBeTruthy();
     expect(columns[1].hidden).toBeFalsy();
     expect(columns[1].filtering).toBeTruthy();
-    // disabled column
-    expect(columns[2].accessor).toBe('device.disabled');
-    expect(columns[2].title).toBe('Disabled Resources');
+    // poweroff column
+    expect(columns[2].accessor).toBe('device.poweroff');
+    expect(columns[2].title).toBe('Power Off Resources');
     expect(columns[2].sortable).toBeTruthy();
-    expect(columns[2].hidden).toBeFalsy();
+    // expect(columns[2].hidden).toBeFalsy();
     expect(columns[2].filtering).toBeTruthy();
-    // warning column
-    expect(columns[3].accessor).toBe('device.warning');
-    expect(columns[3].title).toBe('Warning Resources');
+    // disabled column
+    expect(columns[3].accessor).toBe('device.disabled');
+    expect(columns[3].title).toBe('Disabled Resources');
     expect(columns[3].sortable).toBeTruthy();
     expect(columns[3].hidden).toBeFalsy();
     expect(columns[3].filtering).toBeTruthy();
-    // critical column
-    expect(columns[4].accessor).toBe('device.critical');
-    expect(columns[4].title).toBe('Critical Resources');
+    // warning column
+    expect(columns[4].accessor).toBe('device.warning');
+    expect(columns[4].title).toBe('Warning Resources');
     expect(columns[4].sortable).toBeTruthy();
     expect(columns[4].hidden).toBeFalsy();
     expect(columns[4].filtering).toBeTruthy();
-    // resourceUnavailable column
-    expect(columns[5].accessor).toBe('device.resourceUnavailable');
-    expect(columns[5].title).toBe('Excluded Resources');
+    // critical column
+    expect(columns[5].accessor).toBe('device.critical');
+    expect(columns[5].title).toBe('Critical Resources');
     expect(columns[5].sortable).toBeTruthy();
     expect(columns[5].hidden).toBeFalsy();
     expect(columns[5].filtering).toBeTruthy();
+    // resourceUnavailable column
+    expect(columns[6].accessor).toBe('device.resourceUnavailable');
+    expect(columns[6].title).toBe('Maintenance Resources');
+    expect(columns[6].sortable).toBeTruthy();
+    expect(columns[6].hidden).toBeFalsy();
+    expect(columns[6].filtering).toBeTruthy();
   });
   test('It returns column information of type DataTableColumn (all hidden)', () => {
     const columns = useColumns(dummyNodeFilter, []);
 
-    expect(columns).toHaveLength(6);
+    expect(columns).toHaveLength(7);
     // ID column
     expect(columns[0].accessor).toBe('id');
     expect(columns[0].title).toBe('ID');
@@ -134,30 +143,36 @@ describe('useColumns', () => {
     expect(columns[1].sortable).toBeTruthy();
     expect(columns[1].hidden).toBeTruthy();
     expect(columns[1].filtering).toBeTruthy();
-    // disabled column
-    expect(columns[2].accessor).toBe('device.disabled');
-    expect(columns[2].title).toBe('Disabled Resources');
+    // poweroff column
+    expect(columns[2].accessor).toBe('device.poweroff');
+    expect(columns[2].title).toBe('Power Off Resources');
     expect(columns[2].sortable).toBeTruthy();
     expect(columns[2].hidden).toBeTruthy();
     expect(columns[2].filtering).toBeTruthy();
-    // warning column
-    expect(columns[3].accessor).toBe('device.warning');
-    expect(columns[3].title).toBe('Warning Resources');
+    // disabled column
+    expect(columns[3].accessor).toBe('device.disabled');
+    expect(columns[3].title).toBe('Disabled Resources');
     expect(columns[3].sortable).toBeTruthy();
     expect(columns[3].hidden).toBeTruthy();
     expect(columns[3].filtering).toBeTruthy();
-    // critical column
-    expect(columns[4].accessor).toBe('device.critical');
-    expect(columns[4].title).toBe('Critical Resources');
+    // warning column
+    expect(columns[4].accessor).toBe('device.warning');
+    expect(columns[4].title).toBe('Warning Resources');
     expect(columns[4].sortable).toBeTruthy();
     expect(columns[4].hidden).toBeTruthy();
     expect(columns[4].filtering).toBeTruthy();
-    // resourceUnavailable column
-    expect(columns[5].accessor).toBe('device.resourceUnavailable');
-    expect(columns[5].title).toBe('Excluded Resources');
+    // critical column
+    expect(columns[5].accessor).toBe('device.critical');
+    expect(columns[5].title).toBe('Critical Resources');
     expect(columns[5].sortable).toBeTruthy();
     expect(columns[5].hidden).toBeTruthy();
     expect(columns[5].filtering).toBeTruthy();
+    // resourceUnavailable column
+    expect(columns[6].accessor).toBe('device.resourceUnavailable');
+    expect(columns[6].title).toBe('Maintenance Resources');
+    expect(columns[6].sortable).toBeTruthy();
+    expect(columns[6].hidden).toBeTruthy();
+    expect(columns[6].filtering).toBeTruthy();
   });
 
   test('That the ID is rendered', async () => {
@@ -214,6 +229,35 @@ describe('useColumns', () => {
     // @ts-ignore
     MultiSelect.mock.lastCall[0].onChange('33');
     expect(dummyNodeFilter.setQuery.connected).toHaveBeenCalledTimes(1);
+  });
+
+  test('The number of power off resources is rendered', async () => {
+    const columns = useColumns(dummyNodeFilter, selectedAccessors);
+    const column = columns.find((column) => column.accessor === 'device.poweroff');
+    if (!column || !column.render) {
+      throw new Error('undefined');
+    }
+    render(column.render(dummyAPPNode[0], 0) as ReactElement);
+    // @ts-ignore
+    render(PageLink.mock.lastCall[0].children);
+    expect(screen.getByText('1')).toBeInTheDocument();
+
+    render(column.render(dummyAPPNode[1], 0) as ReactElement);
+    // @ts-ignore
+    render(PageLink.mock.lastCall[0].children);
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  test('The query is updated when the MultiSelect input for the number of power off resources is entered', async () => {
+    const columns = useColumns(dummyNodeFilter, selectedAccessors);
+    const column = columns.find((column) => column.accessor === 'device.poweroff');
+    if (!column || column.filter === undefined) {
+      throw new Error('undefined');
+    }
+    render(column.filter as ReactElement);
+    // @ts-ignore
+    MultiSelect.mock.lastCall[0].onChange('33');
+    expect(dummyNodeFilter.setQuery.poweroff).toHaveBeenCalledTimes(1);
   });
 
   test('That the number of disabled resources is rendered', async () => {
@@ -303,7 +347,7 @@ describe('useColumns', () => {
     expect(dummyNodeFilter.setQuery.critical).toHaveBeenCalledTimes(1);
   });
 
-  test('That the number of resources excluded from design considerations is rendered', async () => {
+  test('That the number of maintenance resources considerations is rendered', async () => {
     const columns = useColumns(dummyNodeFilter, selectedAccessors);
     const column = columns.find((column) => column.accessor === 'device.resourceUnavailable');
     if (!column || !column.render) {
@@ -320,7 +364,7 @@ describe('useColumns', () => {
     expect(screen.getByText('4')).toBeInTheDocument();
   });
 
-  test('The query is updated when the MultiSelect input for the number of resources excluded from design considerations is entered', async () => {
+  test('The query is updated when the MultiSelect input for the number of resources maintenance considerations is entered', async () => {
     const columns = useColumns(dummyNodeFilter, selectedAccessors);
     const column = columns.find((column) => column.accessor === 'device.resourceUnavailable');
     if (!column || column.filter === undefined) {

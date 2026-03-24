@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>;
 /** */
 export const Standard: Story = {
   args: {
-    title: 'Excluded',
+    title: 'Unavailable',
     number: 10,
     link: './resource-list',
     loading: false,
@@ -45,7 +45,7 @@ export const Standard: Story = {
 /** Link + Query */
 export const withQuery: Story = {
   args: {
-    title: 'Excluded',
+    title: 'Unavailable',
     number: 10,
     link: './resource-list',
     query: { health: ['Warning'], type: ['Accelerator'] },

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -45,13 +45,10 @@ const Wrapper = () => {
 };
 
 const ResourceGroupList = () => {
-  // const mswInitializing = useMSW();
-  const mswInitializing = false; // Not using MSW
-
   const t = useTranslations();
 
   const { data, error, isValidating, mutate } = useSWRImmutable<APIResourceGroups>(
-    !mswInitializing && `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resource-groups?withResources=true`,
+    `${process.env.NEXT_PUBLIC_URL_BE_CONFIGURATION_MANAGER}/resource-groups?withResources=true`,
     fetcher
   );
   const { successMessage, setSuccessMessage, openModal } = useResourceGroupModal(mutate);

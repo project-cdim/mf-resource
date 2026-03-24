@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 NEC Corporation.
+ * Copyright 2025-2026 NEC Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -64,7 +64,7 @@ export const WithLink: Story = {
     valueFormatter: () => 'valueFormatter',
     link: '',
     query: {
-      cxlSwitchId: ['cxlSwitchId1', 'cxlSwitchId2'],
+      cxlSwitch: ['fablic1-cxlSwitchId1', 'fablic1-cxlSwitchId2'],
       type: ['CPU'],
       allocatednode: ['allocatednode1', 'allocatednode2'],
       state: ['Enabled'],
